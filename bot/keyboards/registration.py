@@ -1,16 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-
-def get_gender_keyboard() -> InlineKeyboardMarkup:
-    """Создает клавиатуру для выбора пола."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="Мужской", callback_data="gender_male"),
-                InlineKeyboardButton(text="Женский", callback_data="gender_female"),
-            ]
-        ]
-    )
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def get_fitness_level_keyboard() -> InlineKeyboardMarkup:
@@ -25,12 +13,16 @@ def get_fitness_level_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_goal_keyboard() -> InlineKeyboardMarkup:
-    """Создает клавиатуру для выбора цели тренировок."""
+    """Возвращает клавиатуру для выбора цели."""
+    mass_gain_button = InlineKeyboardButton(text="Набор массы", callback_data="goal_mass_gain")
+    weight_loss_button = InlineKeyboardButton(text="Похудение", callback_data="goal_weight_loss")
+    maintenance_button = InlineKeyboardButton(
+        text="Поддержание формы", callback_data="goal_maintenance"
+    )
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Набор мышечной массы", callback_data="goal_mass_gain")],
-            [InlineKeyboardButton(text="Похудение", callback_data="goal_weight_loss")],
-            [InlineKeyboardButton(text="Поддержание формы", callback_data="goal_maintenance")],
+            [mass_gain_button, weight_loss_button],
+            [maintenance_button],
         ]
     )
 
@@ -47,10 +39,20 @@ def get_workout_frequency_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_equipment_type_keyboard() -> InlineKeyboardMarkup:
-    """Создает клавиатуру для выбора типа оборудования."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Тренажерный зал", callback_data="equip_gym")],
-            [InlineKeyboardButton(text="Собственный вес", callback_data="equip_bodyweight")],
-        ]
-    )
+    """Возвращает клавиатуру для выбора типа оборудования."""
+    gym_button = InlineKeyboardButton(text="Тренажерный зал", callback_data="equip_gym")
+    bodyweight_button = InlineKeyboardButton(text="Свой вес", callback_data="equip_bodyweight")
+    return InlineKeyboardMarkup(inline_keyboard=[[gym_button, bodyweight_button]])
+
+
+def get_start_keyboard():
+    """Возвращает клавиатуру с кнопкой 'Начать'."""
+    start_button = InlineKeyboardButton(text="Начать", callback_data="start_registration")
+    return InlineKeyboardMarkup(inline_keyboard=[[start_button]])
+
+
+def get_gender_keyboard():
+    """Возвращает клавиатуру для выбора пола."""
+    gender_male = InlineKeyboardButton(text="Мужской", callback_data="gender_male")
+    gender_female = InlineKeyboardButton(text="Женский", callback_data="gender_female")
+    return InlineKeyboardMarkup(inline_keyboard=[[gender_male, gender_female]])

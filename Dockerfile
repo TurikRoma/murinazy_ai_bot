@@ -13,3 +13,5 @@ COPY . .
 
 # Command to run the bot
 CMD ["python", "bot/main.py"]
+
+

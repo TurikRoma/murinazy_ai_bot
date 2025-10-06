@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
 from typing import AsyncGenerator
 
 from config.settings import settings
+from database.models import Base
 
 
 engine = create_async_engine(settings.DATABASE_URL, echo=False)
@@ -25,3 +26,9 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Генератор для получения сессии БД"""
     async with async_session_maker() as session:
         yield session
+
+
+async def create_tables():
+    """Создает таблицы в базе данных."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

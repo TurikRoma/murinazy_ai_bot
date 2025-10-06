@@ -5,9 +5,15 @@ from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 
 from config.settings import settings
-from bot.handlers import registration, profile, workout
+from bot.handlers import main_router
 from bot.middlewares.db import DbSessionMiddleware
-from database.connection import create_session_pool
+from database.connection import create_session_pool, create_tables
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +21,9 @@ logger = logging.getLogger(__name__)
 async def main():
     """Основная функция запуска бота"""
     logger.info("Запуск бота...")
+    
+    # Создание таблиц в БД
+    await create_tables()
     
     # Инициализация Redis для FSM
     redis = Redis.from_url(settings.REDIS_URL)
@@ -31,9 +40,7 @@ async def main():
     dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
     
     # Регистрация handlers
-    dp.include_router(registration.router)
-    dp.include_router(profile.router)
-    dp.include_router(workout.router)
+    dp.include_router(main_router)
     
     # Запуск polling
     try:

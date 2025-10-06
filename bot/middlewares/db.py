@@ -51,3 +51,4 @@ class DbSessionMiddleware(BaseMiddleware):
             # Мы вызываем следующий обработчик (например, наш хэндлер process_age),
             # передавая ему событие и обновленный словарь 'data' с сессией.
             return await handler(event, data)
+

@@ -12,3 +12,5 @@ class RegistrationStates(StatesGroup):
     waiting_for_workout_frequency = State()
     waiting_for_equipment_type = State()
     registration_complete = State()
+
+

@@ -88,7 +88,7 @@ async def process_fitness_level(query: CallbackQuery, state: FSMContext):
 @router.callback_query(RegistrationStates.waiting_for_goal, F.data.startswith("goal_"))
 async def process_goal(query: CallbackQuery, state: FSMContext):
     """Обработка выбора цели."""
-    goal = query.data.split("_")[1]
+    goal = "_".join(query.data.split("_")[1:])
     await state.update_data(goal=goal)
     await state.set_state(RegistrationStates.waiting_for_target_weight)
     await query.message.edit_text("Отличный выбор! Какой вес ты хочешь достичь?")

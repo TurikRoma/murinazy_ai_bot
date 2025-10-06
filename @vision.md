@@ -78,7 +78,7 @@ murinazy_ai_bot/
 │   │   ├── user_requests.py
 │   │   ├── exercise_requests.py
 │   │   └── workout_requests.py
-│   └── @schemas/          # Pydantic модели
+│   └── schemas/          # Pydantic модели
 │       ├── __init__.py
 │       ├── user.py
 │       ├── exercise.py
