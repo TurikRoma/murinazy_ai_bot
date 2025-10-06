@@ -8,6 +8,10 @@ from bot.states.registration import RegistrationStates
 
 router = Router()
 
+# ID видео-кружка для приветствия
+WELCOME_VIDEO_NOTE_ID = "DQACAgIAAxkBAAMmaOQAAR5O_W30odYD9bVfen7eb2jmAAKmhgACLXcgS1jSe-JEwg0VNgQ"
+
+
 @router.message(CommandStart())
 async def command_start(message: Message):
     """
@@ -15,6 +19,7 @@ async def command_start(message: Message):
     Отправляет приветственное сообщение и кнопку 'Начать'.
     """
     # TODO: Добавить отправку video_note согласно @vision.md
+    await message.answer_video_note(WELCOME_VIDEO_NOTE_ID)
     await message.answer(
         "Привет! Я твой персональный AI-тренер. "
         "Готов начать путь к своей лучшей форме?",
