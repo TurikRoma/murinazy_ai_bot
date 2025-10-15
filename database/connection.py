@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from typing import AsyncGenerator
 
-from config.settings import settings
+from bot.config.settings import settings
 from database.models import Base
 
 

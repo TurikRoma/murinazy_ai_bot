@@ -82,6 +82,9 @@ class Exercise(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=True)
     muscle_groups: Mapped[str] = mapped_column(String, nullable=True)
+    equipment_type: Mapped[EquipmentTypeEnum] = mapped_column(
+        Enum(EquipmentTypeEnum), nullable=False
+    )
     video_url: Mapped[str] = mapped_column(String, nullable=True)
     image_url: Mapped[str] = mapped_column(String, nullable=True)
     instructions: Mapped[str] = mapped_column(String, nullable=True)
@@ -118,9 +121,7 @@ class WorkoutExercise(Base):
         ForeignKey("exercises.id"), nullable=False
     )
     sets: Mapped[int] = mapped_column(Integer, nullable=True)
-    reps: Mapped[int] = mapped_column(Integer, nullable=True)
-    weight: Mapped[float] = mapped_column(Float, nullable=True)
-    rest_time: Mapped[int] = mapped_column(Integer, nullable=True)
+    reps: Mapped[str] = mapped_column(String, nullable=True)
     notes: Mapped[str] = mapped_column(String, nullable=True)
     order: Mapped[int] = mapped_column(Integer, nullable=False)
 

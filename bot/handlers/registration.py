@@ -3,6 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from bot.handlers.start import start_registration_process
 from bot.states.registration import RegistrationStates
 from bot.utils.validation import validate_age, validate_height, validate_weight
 from bot.keyboards.registration import (
@@ -10,11 +11,39 @@ from bot.keyboards.registration import (
     get_goal_keyboard,
     get_workout_frequency_keyboard,
     get_equipment_type_keyboard,
+    get_confirmation_keyboard,
+    get_post_registration_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
 from bot.requests import user_requests
+from bot.requests.user_requests import get_user_by_telegram_id
+from bot.handlers.workout import send_workout_plan
 
 router = Router()
+
+# Словарь для красивого отображения данных пользователю
+HUMAN_READABLE_NAMES = {
+    "gender": "Пол",
+    "age": "Возраст",
+    "height": "Рост",
+    "current_weight": "Текущий вес",
+    "fitness_level": "Уровень подготовки",
+    "goal": "Цель",
+    "target_weight": "Целевой вес",
+    "workout_frequency": "Частота тренировок",
+    "equipment_type": "Тип оборудования",
+    # --- значения ---
+    "male": "Мужской",
+    "female": "Женский",
+    "beginner": "Начинающий",
+    "intermediate": "Опыт 1-3 года",
+    "advanced": "Опыт >3 лет",
+    "mass_gain": "Набор массы",
+    "weight_loss": "Похудение",
+    "maintenance": "Поддержание формы",
+    "gym": "Тренажерный зал",
+    "bodyweight": "Свой вес",
+}
 
 
 @router.callback_query(RegistrationStates.waiting_for_gender, F.data.startswith("gender_"))
@@ -125,13 +154,37 @@ async def process_workout_frequency(query: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(RegistrationStates.waiting_for_equipment_type, F.data.startswith("equip_"))
-async def process_equipment_type(
-    query: CallbackQuery, state: FSMContext, session: AsyncSession
-):
-    """Обработка выбора оборудования и завершение регистрации."""
+async def process_equipment_type(query: CallbackQuery, state: FSMContext):
+    """
+    Обработка выбора оборудования и переход к подтверждению.
+    """
     equipment = query.data.split("_")[1]
     await state.update_data(equipment_type=equipment)
+    await state.set_state(RegistrationStates.waiting_for_confirmation)
 
+    user_data = await state.get_data()
+    
+    # Формируем красивое сообщение с данными
+    summary_text = "Давай проверим все данные:\n\n"
+    for key, value in user_data.items():
+        # Получаем человекочитаемое название поля
+        field_name = HUMAN_READABLE_NAMES.get(key, key)
+        # Получаем человекочитаемое значение (если есть в словаре)
+        display_value = HUMAN_READABLE_NAMES.get(str(value), value)
+        summary_text += f"**{field_name}**: {display_value}\n"
+        
+    await query.message.edit_text(
+        text=summary_text,
+        reply_markup=get_confirmation_keyboard()
+    )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_confirmation, F.data == "confirm_registration")
+async def confirm_registration(query: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """
+    Подтверждение регистрации, сохранение пользователя и завершение.
+    """
     user_data_dict = await state.get_data()
     registration_schema = UserRegistrationSchema(**user_data_dict)
 
@@ -144,8 +197,35 @@ async def process_equipment_type(
     await state.clear()
 
     await query.message.edit_text(
-        "🎉 Поздравляю! Регистрация завершена!\n\n"
+        "🎉 **Поздравляю! Регистрация завершена!**\n\n"
         "Теперь я готовлю для тебя твою первую тренировку. "
-        "Как только она будет готова, я пришлю ее тебе."
+        "Нажми кнопку ниже, чтобы получить ее.",
+        reply_markup=get_post_registration_keyboard(),
     )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_confirmation, F.data == "edit_registration")
+async def edit_registration(query: CallbackQuery, state: FSMContext):
+    """
+    Возврат к началу регистрации для внесения изменений.
+    """
+    # Используем функцию из start.py для начала процесса
+    await start_registration_process(query, state)
+    
+
+@router.callback_query(F.data == "get_workout")
+async def get_workout_after_registration(query: CallbackQuery, session: AsyncSession):
+    """
+    Обработчик кнопки "Получить тренировку" после регистрации.
+    """
+    user = await get_user_by_telegram_id(session, query.from_user.id)
+    if user:
+        # Для send_workout_plan нужен объект Message, а у нас CallbackQuery.
+        # Поэтому передаем query.message.
+        await send_workout_plan(query.message, session, user)
+    else:
+        # На случай, если пользователь как-то нажал кнопку, не будучи в базе
+        await query.message.answer("Произошла ошибка. Пожалуйста, попробуйте пройти регистрацию заново.")
+        
     await query.answer()

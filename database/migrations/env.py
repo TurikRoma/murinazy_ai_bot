@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Импортируем модели и настройки
 from database.models import Base
-from config.settings import settings
+from bot.config.settings import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -37,7 +37,7 @@ target_metadata = Base.metadata
 
 def get_url():
     """Получить URL базы данных из настроек"""
-    return settings.database_url
+    return settings.DATABASE_URL
 
 
 def run_migrations_offline() -> None:
@@ -100,5 +100,6 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+
 
 

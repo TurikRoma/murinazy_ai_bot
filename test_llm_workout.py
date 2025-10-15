@@ -4,7 +4,7 @@
 import asyncio
 import json
 from openai import AsyncOpenAI
-from config.settings import settings
+from bot.config.settings import settings
 
 
 # Инициализация клиента OpenAI
@@ -15,7 +15,7 @@ client = AsyncOpenAI(
 
 # Тестовый профиль пользователя
 TEST_USER = {
-    "goal": "maintenance",             # mass_gain | weight_loss | maintenance
+    "goal": "mass_gain",             # mass_gain | weight_loss | maintenance
     "fitness_level": "beginner", # beginner | intermediate | advanced
     "workout_frequency": 3,          # 2 | 3 | 5
     "equipment_type": "gym"          # gym | bodyweight

@@ -1,15 +1,18 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def get_fitness_level_keyboard() -> InlineKeyboardMarkup:
     """Создает клавиатуру для выбора уровня подготовки."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="Начинающий", callback_data="level_beginner")],
-            [InlineKeyboardButton(text="Опыт 1-3 года", callback_data="level_intermediate")],
-            [InlineKeyboardButton(text="Опыт >3 лет", callback_data="level_advanced")],
-        ]
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="Начинающий", callback_data="level_beginner"),
+        InlineKeyboardButton(text="Опыт 1-3 года", callback_data="level_intermediate"),
     )
+    builder.row(
+        InlineKeyboardButton(text="Опыт >3 лет", callback_data="level_advanced"),
+    )
+    return builder.as_markup()
 
 
 def get_goal_keyboard() -> InlineKeyboardMarkup:
@@ -19,40 +22,75 @@ def get_goal_keyboard() -> InlineKeyboardMarkup:
     maintenance_button = InlineKeyboardButton(
         text="Поддержание формы", callback_data="goal_maintenance"
     )
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [mass_gain_button, weight_loss_button],
-            [maintenance_button],
-        ]
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        mass_gain_button, weight_loss_button,
     )
+    builder.row(
+        maintenance_button,
+    )
+    return builder.as_markup()
 
 
 def get_workout_frequency_keyboard() -> InlineKeyboardMarkup:
     """Создает клавиатуру для выбора частоты тренировок."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="2 раза в неделю", callback_data="freq_2")],
-            [InlineKeyboardButton(text="3 раза в неделю", callback_data="freq_3")],
-            [InlineKeyboardButton(text="5 раз в неделю", callback_data="freq_5")],
-        ]
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="2 раза в неделю", callback_data="freq_2"),
+        InlineKeyboardButton(text="3 раза в неделю", callback_data="freq_3"),
     )
+    builder.row(
+        InlineKeyboardButton(text="5 раз в неделю", callback_data="freq_5"),
+    )
+    return builder.as_markup()
 
 
 def get_equipment_type_keyboard() -> InlineKeyboardMarkup:
     """Возвращает клавиатуру для выбора типа оборудования."""
     gym_button = InlineKeyboardButton(text="Тренажерный зал", callback_data="equip_gym")
     bodyweight_button = InlineKeyboardButton(text="Свой вес", callback_data="equip_bodyweight")
-    return InlineKeyboardMarkup(inline_keyboard=[[gym_button, bodyweight_button]])
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        gym_button, bodyweight_button,
+    )
+    return builder.as_markup()
 
 
-def get_start_keyboard():
+def get_start_keyboard() -> InlineKeyboardMarkup:
     """Возвращает клавиатуру с кнопкой 'Начать'."""
     start_button = InlineKeyboardButton(text="Начать", callback_data="start_registration")
-    return InlineKeyboardMarkup(inline_keyboard=[[start_button]])
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        start_button,
+    )
+    return builder.as_markup()
 
 
-def get_gender_keyboard():
+def get_gender_keyboard() -> InlineKeyboardMarkup:
     """Возвращает клавиатуру для выбора пола."""
     gender_male = InlineKeyboardButton(text="Мужской", callback_data="gender_male")
     gender_female = InlineKeyboardButton(text="Женский", callback_data="gender_female")
-    return InlineKeyboardMarkup(inline_keyboard=[[gender_male, gender_female]])
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        gender_male, gender_female,
+    )
+    return builder.as_markup()
+
+
+def get_confirmation_keyboard() -> InlineKeyboardMarkup:
+    """Создает клавиатуру для подтверждения данных регистрации."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_registration"),
+        InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_registration"),
+    )
+    return builder.as_markup()
+
+
+def get_post_registration_keyboard() -> InlineKeyboardMarkup:
+    """Создает клавиатуру после успешной регистрации."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="💪 Получить тренировку", callback_data="get_workout")
+    )
+    return builder.as_markup()

@@ -52,3 +52,4 @@ class DbSessionMiddleware(BaseMiddleware):
             # передавая ему событие и обновленный словарь 'data' с сессией.
             return await handler(event, data)
 
+

@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
 
-from config.settings import settings
+from bot.config.settings import settings
 from bot.handlers import main_router
 from bot.middlewares.db import DbSessionMiddleware
 from database.connection import create_session_pool, create_tables
@@ -39,9 +39,10 @@ async def main():
     # Подключение middleware
     dp.update.middleware(DbSessionMiddleware(session_pool=session_pool))
     
-    # Регистрация handlers
+    # Подключение роутеров
     dp.include_router(main_router)
-    
+
+    await bot.delete_webhook(drop_pending_updates=True)
     # Запуск polling
     try:
         await dp.start_polling(bot)

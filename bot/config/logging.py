@@ -3,7 +3,7 @@ import logging.handlers
 import os
 from pathlib import Path
 
-from config.settings import settings
+from bot.config.settings import settings
 
 
 def setup_logging():
