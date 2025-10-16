@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Enum,
     Float,
+    Time,
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -52,6 +53,15 @@ class WorkoutStatusEnum(str, enum.Enum):
     completed = "completed"
     skipped = "skipped"
 
+class WorkoutScheduleDayEnum(str, enum.Enum):
+    monday = "monday"
+    tuesday = "tuesday"
+    wednesday = "wednesday"
+    thursday = "thursday"
+    friday = "friday"
+    saturday = "saturday"
+    sunday = "sunday"
+
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -73,7 +83,7 @@ class User(Base, TimestampMixin):
     )
 
     workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user")
-
+    workout_schedules: Mapped[list["WorkoutSchedule"]] = relationship("WorkoutSchedule", back_populates="user")
 
 class Exercise(Base):
     __tablename__ = "exercises"
@@ -110,7 +120,7 @@ class Workout(Base, TimestampMixin):
     workout_exercises: Mapped[list["WorkoutExercise"]] = relationship(
         "WorkoutExercise", back_populates="workout"
     )
-
+    
 
 class WorkoutExercise(Base):
     __tablename__ = "workout_exercises"
@@ -129,3 +139,14 @@ class WorkoutExercise(Base):
     exercise: Mapped["Exercise"] = relationship(
         "Exercise", back_populates="workout_exercises"
     )
+
+class WorkoutSchedule(Base):
+    __tablename__ = "workout_schedules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    day: Mapped[WorkoutScheduleDayEnum] = mapped_column(Enum(WorkoutScheduleDayEnum), nullable=False)
+    notification_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="workout_schedules")
+    

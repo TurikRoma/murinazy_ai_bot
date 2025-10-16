@@ -94,3 +94,12 @@ def get_post_registration_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="💪 Получить тренировку", callback_data="get_workout")
     )
     return builder.as_markup()
+
+def get_workout_schedule_keyboard() -> InlineKeyboardMarkup:
+    """Создает клавиатуру для выбора расписания тренировок."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="Настроить", callback_data="schedule_configure"),
+        InlineKeyboardButton(text="Пропустить", callback_data="schedule_skip"),
+    )
+    return builder.as_markup()

@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.requests.user_requests import get_user_by_telegram_id
-from bot.services.workout_service import workout_service, WorkoutCooldownError
+from bot.services.workout_service import workout_service
 from database.models import User
 
 router = Router()
@@ -22,8 +22,6 @@ async def send_workout_plan(message: Message, session: AsyncSession, user: User)
         response_text = workout_service.format_workout_message(new_workout)
         await loading_message.edit_text(response_text, parse_mode="Markdown")
 
-    except WorkoutCooldownError as e:
-        await loading_message.edit_text(e.message)
     except Exception as e:
         await loading_message.edit_text(
             "❌ Произошла ошибка при генерации тренировки. "

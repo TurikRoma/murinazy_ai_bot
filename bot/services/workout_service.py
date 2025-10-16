@@ -1,28 +1,16 @@
 import asyncio
-from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config.settings import settings
-from bot.requests.workout_requests import get_last_workout_date, create_full_workout
+from bot.requests.workout_requests import create_full_workout
 from bot.requests.exercise_requests import get_exercises_by_equipment, get_exercises_by_names
 from bot.services.llm_service import llm_service
 from database.models import User, Workout
 
 
-class WorkoutCooldownError(Exception):
-    def __init__(self, message="Вы можете запросить новую тренировку не раньше, чем через 12 часов."):
-        self.message = message
-        super().__init__(self.message)
-
-
 class WorkoutService:
     async def create_new_workout_plan(self, session: AsyncSession, user: User) -> Workout:
-        last_workout_time = await get_last_workout_date(session, user.id)
-        if last_workout_time and (datetime.utcnow() - last_workout_time) < timedelta(
-                hours=settings.WORKOUT_COOLDOWN_HOURS):
-            raise WorkoutCooldownError()
-
         # 1. Получение доступных упражнений
         exercises = await get_exercises_by_equipment(
             session, user.equipment_type

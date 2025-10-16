@@ -145,9 +145,32 @@ async def process_workout_frequency(query: CallbackQuery, state: FSMContext):
     """Обработка выбора частоты тренировок."""
     frequency = int(query.data.split("_")[1])
     await state.update_data(workout_frequency=frequency)
+    await state.set_state(RegistrationStates.waiting_for_workout_schedule)
+    await query.message.edit_text(
+        "Хочешь настроить расписание тренировок? Можно пропустить. Если пропустишь, то я буду отправлять через 24 часа.",
+        reply_markup=get_workout_schedule_keyboard(),
+    )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_workout_schedule, F.data == "schedule_configure")
+async def process_workout_schedule_configure(query: CallbackQuery, state: FSMContext):
+    """Обработка выбора расписания тренировок."""
+    await state.set_state(RegistrationStates.waiting_for_workout_schedule_day)
+    await query.message.edit_text(
+        "В какие дни ты планируешь тренироваться?",
+        reply_markup=get_workout_schedule_day_keyboard(),
+    )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_workout_schedule, F.data == "schedule_skip")
+async def process_workout_schedule(query: CallbackQuery, state: FSMContext):
+    """Обработка выбора расписания тренировок."""
+    await state.update_data(workout_schedule=None)
     await state.set_state(RegistrationStates.waiting_for_equipment_type)
     await query.message.edit_text(
-        "Последний вопрос! Где ты будешь тренироваться?",
+        "Где ты будешь тренироваться?",
         reply_markup=get_equipment_type_keyboard(),
     )
     await query.answer()
