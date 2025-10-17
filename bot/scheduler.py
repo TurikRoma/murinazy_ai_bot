@@ -1,0 +1,90 @@
+import logging
+
+from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
+from bot.requests.workout_requests import (
+    get_workout_with_exercises,
+    get_future_planned_workouts,
+    update_workout_status,
+)
+from database.models import WorkoutStatusEnum
+
+scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+logger = logging.getLogger(__name__)
+
+
+async def send_workout_notification(
+    bot: Bot, user_id: int, workout_id: int, session_pool: async_sessionmaker
+):
+    """
+    Отправляет уведомление с полной тренировкой.
+    """
+    async with session_pool() as session:
+        workout = await get_workout_with_exercises(session, workout_id)
+        if not workout:
+            logger.warning(
+                f"Тренировка с ID {workout_id} не найдена для отправки уведомления."
+            )
+            return
+
+        # TODO: Сделать красивое форматирование
+        exercises_text = "\n".join(
+            [
+                f"{idx + 1}: {we.exercise.name} ({we.sets} сета по {we.reps} повт.)"
+                for idx, we in enumerate(workout.workout_exercises)
+            ]
+        )
+        message = (
+            f"🔥 <b>Ваша тренировка на сегодня готова!</b>\n\n"
+            f"Вот ваш план:\n{exercises_text}\n\n"
+            f"Не забудьте сделать разминку перед началом."
+        )
+
+        # TODO: Добавить кнопку "Завершить тренировку"
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Завершил", callback_data=f"workout_completed_{workout_id}"
+                    ),
+                    InlineKeyboardButton(
+                        text="❌ Пропустил", callback_data=f"workout_skipped_{workout_id}"
+                    ),
+                ]
+            ]
+        )
+        await bot.send_message(user_id, message, reply_markup=keyboard)
+        logger.info(
+            f"Уведомление о тренировке #{workout_id} успешно отправлено пользователю {user_id}"
+        )
+
+        # Обновляем статус тренировки на "отправлено"
+        await update_workout_status(session, workout_id, WorkoutStatusEnum.sent)
+        logger.info(
+            f"Статус тренировки #{workout_id} обновлен на '{WorkoutStatusEnum.sent.value}'"
+        )
+
+
+async def restore_scheduled_jobs(bot: Bot, session_pool: async_sessionmaker):
+    """
+    Восстанавливает запланированные уведомления о тренировках после перезапуска.
+    """
+    async with session_pool() as session:
+        workouts = await get_future_planned_workouts(session)
+        logger.info(f"Найдено {len(workouts)} тренировок для восстановления.")
+        for workout in workouts:
+            scheduler.add_job(
+                send_workout_notification,
+                "date",
+                run_date=workout.planned_date,
+                args=[bot, workout.user.telegram_id, workout.id, session_pool],
+                id=f"workout_notification_{workout.id}",
+                replace_existing=True,
+            )
+            logger.info(
+                f"Запланировано уведомление для тренировки #{workout.id} "
+                f"пользователя {workout.user.telegram_id} на {workout.planned_date}"
+            )

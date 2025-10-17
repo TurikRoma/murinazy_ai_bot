@@ -5,7 +5,7 @@
 from typing import Callable, Dict, Any, Awaitable
 
 # Импортируем классы из aiogram, необходимые для создания middleware.
-from aiogram import BaseMiddleware
+from aiogram import BaseMiddleware, Bot
 from aiogram.types import TelegramObject
 # Импортируем "фабрику сессий" из SQLAlchemy для создания подключений к БД.
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -51,5 +51,35 @@ class DbSessionMiddleware(BaseMiddleware):
             # Мы вызываем следующий обработчик (например, наш хэндлер process_age),
             # передавая ему событие и обновленный словарь 'data' с сессией.
             return await handler(event, data)
+
+
+class BotObjectMiddleware(BaseMiddleware):
+    def __init__(self, bot_instance: Bot):
+        super().__init__()
+        self.bot_instance = bot_instance
+
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
+    ) -> Any:
+        data["bot"] = self.bot_instance
+        return await handler(event, data)
+
+
+class WorkoutServiceMiddleware(BaseMiddleware):
+    def __init__(self, workout_service: "WorkoutService"):
+        super().__init__()
+        self.workout_service = workout_service
+
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
+    ) -> Any:
+        data["workout_service"] = self.workout_service
+        return await handler(event, data)
 
 

@@ -48,3 +48,13 @@ async def create_or_update_user_schedule(
         session.add_all(new_schedules)
         await session.commit()
 
+
+async def get_user_schedule(
+    session: AsyncSession, user_id: int
+) -> list[WorkoutSchedule]:
+    """
+    Получает все записи расписания для указанного пользователя.
+    """
+    stmt = select(WorkoutSchedule).where(WorkoutSchedule.user_id == user_id)
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

@@ -52,6 +52,8 @@ class WorkoutStatusEnum(str, enum.Enum):
     planned = "planned"
     completed = "completed"
     skipped = "skipped"
+    sent = "sent"
+
 
 class WorkoutScheduleDayEnum(str, enum.Enum):
     понедельник = "понедельник"
@@ -109,7 +111,7 @@ class Workout(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    planned_date: Mapped[datetime.date] = mapped_column(
+    planned_date: Mapped[datetime.datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
     status: Mapped[WorkoutStatusEnum] = mapped_column(

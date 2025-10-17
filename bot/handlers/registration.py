@@ -2,6 +2,12 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
+from datetime import datetime
+import logging
+
+# Устанавливаем русскую локаль для названий дней недели
+# locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 from bot.handlers.start import start_registration_process
 from bot.states.registration import RegistrationStates
@@ -20,7 +26,9 @@ from bot.schemas.user import UserRegistrationSchema
 from bot.requests import user_requests
 from bot.requests.schedule_requests import create_or_update_user_schedule
 from bot.requests.user_requests import get_user_by_telegram_id
-from bot.handlers.workout import send_workout_plan
+from bot.services.workout_service import WorkoutService
+from bot.config.settings import DAYS_OF_WEEK_RU_FULL
+
 
 router = Router()
 
@@ -47,6 +55,13 @@ HUMAN_READABLE_NAMES = {
     "maintenance": "Поддержание формы",
     "gym": "Тренажерный зал",
     "bodyweight": "Свой вес",
+}
+
+# Словарь для ручного перевода дней недели (независимо от локали)
+DAYS_OF_WEEK_RU = {
+    'Monday': 'Понедельник', 'Tuesday': 'Вторник', 'Wednesday': 'Среда',
+    'Thursday': 'Четверг', 'Friday': 'Пятница', 'Saturday': 'Суббота',
+    'Sunday': 'Воскресенье'
 }
 
 
@@ -217,10 +232,14 @@ async def process_confirm_days(query: CallbackQuery, state: FSMContext):
     
     await state.set_state(RegistrationStates.waiting_for_workout_schedule_time)
     
-    first_day = selected_days[0]
+    first_day_short = selected_days[0]
+    first_day_full = DAYS_OF_WEEK_RU_FULL.get(first_day_short, first_day_short).capitalize()
+    
+
     await query.message.edit_text(
-        f"Отлично! Теперь введи время для тренировки в **{first_day}**.\n\n"
-        "Формат: `18:30` или просто `18` (будет 18:00)."
+        f"Отлично! Теперь введи время для тренировки в <b>{first_day_full}</b>.\n\n"
+        "Формат: <code>18:30</code> или просто <code>18</code> (будет 18:00).",
+        parse_mode="HTML"
     )
     await query.answer()
 
@@ -230,7 +249,7 @@ async def process_time_input(message: Message, state: FSMContext):
     """Обработка ввода времени для каждого выбранного дня."""
     time = validate_time(message.text)
     if time is None:
-        await message.answer("❌ Некорректный формат времени. Попробуй еще раз (например, `19:00` или `19`).")
+        await message.answer("❌ Некорректный формат времени. Попробуй еще раз (например, <code>19:00</code> или <code>19</code>).", parse_mode="HTML")
         return
 
     user_data = await state.get_data()
@@ -246,8 +265,12 @@ async def process_time_input(message: Message, state: FSMContext):
 
     # Если еще остались дни, по которым нужно спросить время
     if len(schedule) < len(selected_days):
-        next_day = selected_days[len(schedule)]
-        await message.answer(f"Принято! Теперь введи время для тренировки в **{next_day}**.")
+        next_day_short = selected_days[len(schedule)]
+        next_day_full = DAYS_OF_WEEK_RU_FULL.get(next_day_short, next_day_short).capitalize()
+        await message.answer(
+            f"Принято! Теперь введи время для тренировки в <b>{next_day_full}</b>.",
+            parse_mode="HTML"
+        )
     else:
         # Все времена введены, переходим к следующему шагу
         await state.set_state(RegistrationStates.waiting_for_equipment_type)
@@ -308,48 +331,97 @@ async def process_equipment_type(query: CallbackQuery, state: FSMContext):
             else:
                  display_value = HUMAN_READABLE_NAMES.get(str(value), value)
 
-            summary_text += f"**{field_name}**: {display_value}\n"
+            summary_text += f"<b>{field_name}</b>: {display_value}\n"
             
     await query.message.edit_text(
         text=summary_text,
-        reply_markup=get_confirmation_keyboard()
+        reply_markup=get_confirmation_keyboard(),
+        parse_mode="HTML"
     )
     await query.answer()
 
 
 @router.callback_query(RegistrationStates.waiting_for_confirmation, F.data == "confirm_registration")
-async def confirm_registration(query: CallbackQuery, state: FSMContext, session: AsyncSession):
+async def confirm_registration(
+    query: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+    workout_service: WorkoutService,
+):
     """
-    Подтверждение регистрации, сохранение пользователя и завершение.
+    Подтверждение регистрации, сохранение пользователя и запуск генерации плана.
     """
-    user_data_dict = await state.get_data()
-    registration_schema = UserRegistrationSchema(**user_data_dict)
-
-    # Создаем или обновляем пользователя
-    user = await user_requests.create_or_update_user(
-        session=session,
-        user_data=registration_schema,
-        telegram_id=query.from_user.id,
+    loading_message = await query.message.edit_text(
+        "Одну минуту, создаю для тебя индивидуальный план тренировок... 🤖"
     )
 
-    # Сохраняем расписание, если оно было настроено
-    workout_schedule = user_data_dict.get("workout_schedule")
-    if user and workout_schedule:
-        await create_or_update_user_schedule(
+    try:
+        user_data_dict = await state.get_data()
+        registration_schema = UserRegistrationSchema(**user_data_dict)
+
+        # Создаем или обновляем пользователя
+        user = await user_requests.create_or_update_user(
             session=session,
-            user_id=user.id,
-            schedule_data=workout_schedule
+            user_data=registration_schema,
+            telegram_id=query.from_user.id,
         )
 
-    await state.clear()
+        # Сохраняем расписание, если оно было настроено
+        workout_schedule = user_data_dict.get("workout_schedule")
+        if user and workout_schedule:
+            await create_or_update_user_schedule(
+                session=session,
+                user_id=user.id,
+                schedule_data=workout_schedule,
+            )
 
-    await query.message.edit_text(
-        "🎉 **Поздравляю! Регистрация завершена!**\n\n"
-        "Теперь я готовлю для тебя твою первую тренировку. "
-        "Нажми кнопку ниже, чтобы получить ее.",
-        reply_markup=get_post_registration_keyboard(),
-    )
-    await query.answer()
+        await state.clear()
+
+        # Генерация, планирование и получение даты ближайшей тренировки
+        next_workout_datetime = await workout_service.create_and_schedule_weekly_workout(
+            session, user.telegram_id
+        )
+
+        if next_workout_datetime:
+            # Ручное форматирование даты для надежности
+            day_en = next_workout_datetime.strftime('%A')
+            day_ru = DAYS_OF_WEEK_RU.get(day_en, day_en)
+            formatted_date = f"{day_ru}, {next_workout_datetime.strftime('%d.%m.%Y в %H:%M')}"
+
+            final_text = (
+                "✅ Ваш план тренировок на неделю готов!\n\n"
+                f"🗓️ Ваша следующая тренировка запланирована на <b>{formatted_date}</b>. "
+                "Я пришлю уведомление в назначенное время. Хотите посмотреть план уже сейчас?"
+            )
+            await loading_message.edit_text(
+                final_text,
+                reply_markup=get_post_registration_keyboard(),
+                parse_mode="HTML"
+            )
+        else:
+            # Если тренировок на этой неделе нет
+            final_text = (
+                "✅ Ваш план тренировок на неделю готов!\n\n"
+                "На этой неделе запланированных тренировок нет. "
+                "Новый план будет создан в начале следующей недели. "
+                "Хотите посмотреть детали плана?"
+            )
+            await loading_message.edit_text(
+                final_text,
+                reply_markup=get_post_registration_keyboard(),
+                parse_mode="HTML"
+            )
+
+    except Exception as e:
+        logging.exception("Error during registration confirmation")
+        await loading_message.edit_text(
+            "❌ Произошла непредвиденная ошибка при создании вашего плана. "
+            "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
+            "Если проблема повторится, свяжитесь с поддержкой."
+        )
+
+    finally:
+        await query.answer()
 
 
 @router.callback_query(RegistrationStates.waiting_for_confirmation, F.data == "edit_registration")
@@ -359,20 +431,3 @@ async def edit_registration(query: CallbackQuery, state: FSMContext):
     """
     # Используем функцию из start.py для начала процесса
     await start_registration_process(query, state)
-    
-
-@router.callback_query(F.data == "get_workout")
-async def get_workout_after_registration(query: CallbackQuery, session: AsyncSession):
-    """
-    Обработчик кнопки "Получить тренировку" после регистрации.
-    """
-    user = await get_user_by_telegram_id(session, query.from_user.id)
-    if user:
-        # Для send_workout_plan нужен объект Message, а у нас CallbackQuery.
-        # Поэтому передаем query.message.
-        await send_workout_plan(query.message, session, user)
-    else:
-        # На случай, если пользователь как-то нажал кнопку, не будучи в базе
-        await query.message.answer("Произошла ошибка. Пожалуйста, попробуйте пройти регистрацию заново.")
-        
-    await query.answer()

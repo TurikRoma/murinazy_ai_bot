@@ -1,12 +1,15 @@
 import datetime
 from typing import List, Sequence
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from database.models import Workout, WorkoutExercise, Exercise, User
+from database.models import Workout, WorkoutExercise, Exercise, User, WorkoutStatusEnum
 from bot.schemas.workout import LLMWorkoutPlan
+from bot.requests.exercise_requests import get_exercise_by_name
+
 
 
 async def get_last_workout_for_user(
@@ -116,3 +119,80 @@ async def create_full_workout(
     )
     result = await session.execute(stmt)
     return result.scalars().one()
+
+
+async def save_weekly_plan(
+    session: AsyncSession,
+    user_id: int,
+    plan: LLMWorkoutPlan,
+    workout_dates: list[datetime],
+) -> list[Workout]:
+    """
+    Сохраняет сгенерированный недельный план тренировок в БД.
+    """
+    created_workouts = []
+    for idx, session_data in enumerate(plan.sessions):
+        # Создаем саму тренировку
+        workout = Workout(user_id=user_id, planned_date=workout_dates[idx])
+        session.add(workout)
+        await session.flush()  # Получаем ID тренировки
+
+        # Добавляем упражнения к тренировке
+        for order, exercise_data in enumerate(session_data.exercises):
+            exercise = await get_exercise_by_name(session, exercise_data.name)
+            if exercise:
+                workout_exercise = WorkoutExercise(
+                    workout_id=workout.id,
+                    exercise_id=exercise.id,
+                    sets=exercise_data.sets,
+                    reps=exercise_data.reps,
+                    order=order,
+                )
+                session.add(workout_exercise)
+        created_workouts.append(workout)
+
+    await session.commit()
+    return created_workouts
+
+
+async def get_workout_with_exercises(
+    session: AsyncSession, workout_id: int
+) -> Workout | None:
+    """
+    Получает тренировку со всеми связанными упражнениями.
+    """
+    stmt = (
+        select(Workout)
+        .where(Workout.id == workout_id)
+        .options(selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.exercise))
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_future_planned_workouts(session: AsyncSession) -> Sequence[Workout]:
+    """
+    Получает все запланированные тренировки, которые еще не начались.
+    """
+    stmt = (
+        select(Workout)
+        .where(
+            Workout.status == WorkoutStatusEnum.planned,
+            Workout.planned_date > datetime.datetime.now(),
+        )
+        .options(selectinload(Workout.user))
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def update_workout_status(
+    session: AsyncSession, workout_id: int, status: WorkoutStatusEnum
+) -> Workout | None:
+    """Обновляет статус тренировки по ее ID."""
+    workout = await session.get(Workout, workout_id)
+    if workout:
+        workout.status = status
+        await session.commit()
+        await session.refresh(workout)
+    return workout

@@ -38,3 +38,12 @@ async def get_exercises_by_names(
     stmt = select(Exercise).where(Exercise.name.in_(names))
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+async def get_exercise_by_name(
+    session: AsyncSession, name: str
+) -> Exercise | None:
+    """Получает одно упражнение по его точному названию."""
+    stmt = select(Exercise).where(Exercise.name == name)
+    result = await session.execute(stmt)
+    return result.scalars().first()
