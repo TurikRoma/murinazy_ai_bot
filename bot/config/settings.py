@@ -1,5 +1,16 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DAYS_OF_WEEK_RU_FULL = {
+    "Пн": "понедельник",
+    "Вт": "вторник",
+    "Ср": "среда",
+    "Чт": "четверг",
+    "Пт": "пятница",
+    "Сб": "суббота",
+    "Вс": "воскресенье",
+}
+
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

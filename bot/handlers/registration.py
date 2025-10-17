@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers.start import start_registration_process
 from bot.states.registration import RegistrationStates
-from bot.utils.validation import validate_age, validate_height, validate_weight
+from bot.utils.validation import validate_age, validate_height, validate_weight, validate_time
 from bot.keyboards.registration import (
     get_fitness_level_keyboard,
     get_goal_keyboard,
@@ -13,9 +13,12 @@ from bot.keyboards.registration import (
     get_equipment_type_keyboard,
     get_confirmation_keyboard,
     get_post_registration_keyboard,
+    get_workout_schedule_keyboard,
+    get_workout_schedule_day_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
 from bot.requests import user_requests
+from bot.requests.schedule_requests import create_or_update_user_schedule
 from bot.requests.user_requests import get_user_by_telegram_id
 from bot.handlers.workout import send_workout_plan
 
@@ -32,6 +35,7 @@ HUMAN_READABLE_NAMES = {
     "target_weight": "Целевой вес",
     "workout_frequency": "Частота тренировок",
     "equipment_type": "Тип оборудования",
+    "workout_schedule": "Расписание",
     # --- значения ---
     "male": "Мужской",
     "female": "Женский",
@@ -155,13 +159,102 @@ async def process_workout_frequency(query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(RegistrationStates.waiting_for_workout_schedule, F.data == "schedule_configure")
 async def process_workout_schedule_configure(query: CallbackQuery, state: FSMContext):
-    """Обработка выбора расписания тренировок."""
+    """Начало настройки расписания: выбор дней."""
+    await state.update_data(selected_days=[], workout_schedule={})
     await state.set_state(RegistrationStates.waiting_for_workout_schedule_day)
     await query.message.edit_text(
         "В какие дни ты планируешь тренироваться?",
         reply_markup=get_workout_schedule_day_keyboard(),
     )
     await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_workout_schedule_day, F.data.startswith("day_"))
+async def process_day_selection(query: CallbackQuery, state: FSMContext):
+    """Обработка выбора/отмены выбора дня недели."""
+    day = query.data.split("_")[1]
+    user_data = await state.get_data()
+    selected_days = user_data.get("selected_days", [])
+    frequency = user_data.get("workout_frequency", 0)
+
+    if day in selected_days:
+        selected_days.remove(day)
+    else:
+        if len(selected_days) >= frequency:
+            await query.answer(
+                "Вы уже выбрали максимальное количество дней. "
+                "Чтобы выбрать другой день, сначала отмените выбор одного из уже выбранных.",
+                show_alert=True
+            )
+            return
+        selected_days.append(day)
+
+    await state.update_data(selected_days=selected_days)
+    await query.message.edit_reply_markup(
+        reply_markup=get_workout_schedule_day_keyboard(selected_days)
+    )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_workout_schedule_day, F.data == "confirm_days")
+async def process_confirm_days(query: CallbackQuery, state: FSMContext):
+    """Подтверждение выбора дней и переход к вводу времени."""
+    user_data = await state.get_data()
+    selected_days = user_data.get("selected_days", [])
+    frequency = user_data.get("workout_frequency", 0)
+
+    if len(selected_days) != frequency:
+        await query.answer(
+            f"Пожалуйста, выберите ровно {frequency} дня для тренировок.",
+            show_alert=True
+        )
+        return
+
+    # Сохраняем отсортированный список дней для последовательного опроса
+    days_order = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    selected_days.sort(key=days_order.index)
+    await state.update_data(selected_days=selected_days)
+    
+    await state.set_state(RegistrationStates.waiting_for_workout_schedule_time)
+    
+    first_day = selected_days[0]
+    await query.message.edit_text(
+        f"Отлично! Теперь введи время для тренировки в **{first_day}**.\n\n"
+        "Формат: `18:30` или просто `18` (будет 18:00)."
+    )
+    await query.answer()
+
+
+@router.message(RegistrationStates.waiting_for_workout_schedule_time)
+async def process_time_input(message: Message, state: FSMContext):
+    """Обработка ввода времени для каждого выбранного дня."""
+    time = validate_time(message.text)
+    if time is None:
+        await message.answer("❌ Некорректный формат времени. Попробуй еще раз (например, `19:00` или `19`).")
+        return
+
+    user_data = await state.get_data()
+    selected_days = user_data.get("selected_days", [])
+    schedule = user_data.get("workout_schedule", {})
+    
+    # Определяем, для какого дня вводим время
+    current_day_index = len(schedule)
+    day = selected_days[current_day_index]
+    schedule[day] = time
+    
+    await state.update_data(workout_schedule=schedule)
+
+    # Если еще остались дни, по которым нужно спросить время
+    if len(schedule) < len(selected_days):
+        next_day = selected_days[len(schedule)]
+        await message.answer(f"Принято! Теперь введи время для тренировки в **{next_day}**.")
+    else:
+        # Все времена введены, переходим к следующему шагу
+        await state.set_state(RegistrationStates.waiting_for_equipment_type)
+        await message.answer(
+            "Где ты будешь тренироваться?",
+            reply_markup=get_equipment_type_keyboard(),
+        )
 
 
 @router.callback_query(RegistrationStates.waiting_for_workout_schedule, F.data == "schedule_skip")
@@ -189,13 +282,34 @@ async def process_equipment_type(query: CallbackQuery, state: FSMContext):
     
     # Формируем красивое сообщение с данными
     summary_text = "Давай проверим все данные:\n\n"
-    for key, value in user_data.items():
-        # Получаем человекочитаемое название поля
-        field_name = HUMAN_READABLE_NAMES.get(key, key)
-        # Получаем человекочитаемое значение (если есть в словаре)
-        display_value = HUMAN_READABLE_NAMES.get(str(value), value)
-        summary_text += f"**{field_name}**: {display_value}\n"
-        
+    
+    # Определяем порядок ключей для красивого вывода
+    order = [
+        "gender", "age", "height", "current_weight", "fitness_level", 
+        "goal", "target_weight", "workout_frequency", "workout_schedule", 
+        "equipment_type"
+    ]
+
+    for key in order:
+        if key in user_data:
+            value = user_data[key]
+            if value is None:  # Пропускаем пропущенные шаги (расписание)
+                continue
+            
+            field_name = HUMAN_READABLE_NAMES.get(key, key)
+            
+            if key == "workout_schedule":
+                # Красиво форматируем расписание
+                if isinstance(value, dict) and value:
+                    schedule_str = ", ".join([f"{day} в {time}" for day, time in value.items()])
+                    display_value = schedule_str
+                else:
+                    continue # не выводим если пусто
+            else:
+                 display_value = HUMAN_READABLE_NAMES.get(str(value), value)
+
+            summary_text += f"**{field_name}**: {display_value}\n"
+            
     await query.message.edit_text(
         text=summary_text,
         reply_markup=get_confirmation_keyboard()
@@ -211,11 +325,21 @@ async def confirm_registration(query: CallbackQuery, state: FSMContext, session:
     user_data_dict = await state.get_data()
     registration_schema = UserRegistrationSchema(**user_data_dict)
 
-    await user_requests.create_or_update_user(
+    # Создаем или обновляем пользователя
+    user = await user_requests.create_or_update_user(
         session=session,
         user_data=registration_schema,
         telegram_id=query.from_user.id,
     )
+
+    # Сохраняем расписание, если оно было настроено
+    workout_schedule = user_data_dict.get("workout_schedule")
+    if user and workout_schedule:
+        await create_or_update_user_schedule(
+            session=session,
+            user_id=user.id,
+            schedule_data=workout_schedule
+        )
 
     await state.clear()
 

@@ -95,6 +95,27 @@ def get_post_registration_keyboard() -> InlineKeyboardMarkup:
     )
     return builder.as_markup()
 
+def get_workout_schedule_day_keyboard(selected_days: list[str] = None) -> InlineKeyboardMarkup:
+    """Создает клавиатуру для выбора дней недели."""
+    if selected_days is None:
+        selected_days = []
+
+    days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    builder = InlineKeyboardBuilder()
+
+    row_buttons = []
+    for day in days:
+        text = f"✅ {day}" if day in selected_days else day
+        row_buttons.append(InlineKeyboardButton(text=text, callback_data=f"day_{day}"))
+
+    # Разделяем на ряды по 3-4 кнопки для удобства
+    builder.row(*row_buttons[:4])
+    builder.row(*row_buttons[4:])
+
+    builder.row(InlineKeyboardButton(text="Подтвердить", callback_data="confirm_days"))
+    return builder.as_markup()
+
+
 def get_workout_schedule_keyboard() -> InlineKeyboardMarkup:
     """Создает клавиатуру для выбора расписания тренировок."""
     builder = InlineKeyboardBuilder()

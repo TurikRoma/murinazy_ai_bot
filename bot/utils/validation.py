@@ -28,3 +28,23 @@ def validate_weight(weight_str: str) -> float | None:
     except (ValueError, TypeError):
         return None
     return None
+
+def validate_time(time_str: str) -> str | None:
+    """
+    Валидирует время.
+    Принимает форматы "HH", "HH:MM".
+    Возвращает строку "HH:MM" или None.
+    """
+    try:
+        if ":" in time_str:
+            hours, minutes = map(int, time_str.split(":"))
+        else:
+            hours, minutes = int(time_str), 0
+        
+        if 0 <= hours <= 23 and 0 <= minutes <= 59:
+            return f"{hours:02d}:{minutes:02d}"
+            
+    except (ValueError, TypeError):
+        return None
+        
+    return None

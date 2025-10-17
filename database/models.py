@@ -54,13 +54,13 @@ class WorkoutStatusEnum(str, enum.Enum):
     skipped = "skipped"
 
 class WorkoutScheduleDayEnum(str, enum.Enum):
-    monday = "monday"
-    tuesday = "tuesday"
-    wednesday = "wednesday"
-    thursday = "thursday"
-    friday = "friday"
-    saturday = "saturday"
-    sunday = "sunday"
+    понедельник = "понедельник"
+    вторник = "вторник"
+    среда = "среда"
+    четверг = "четверг"
+    пятница = "пятница"
+    суббота = "суббота"
+    воскресенье = "воскресенье"
 
 
 class User(Base, TimestampMixin):
@@ -82,8 +82,8 @@ class User(Base, TimestampMixin):
         Enum(EquipmentTypeEnum), nullable=True
     )
 
-    workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user")
-    workout_schedules: Mapped[list["WorkoutSchedule"]] = relationship("WorkoutSchedule", back_populates="user")
+    workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
+    workout_schedules: Mapped[list["WorkoutSchedule"]] = relationship("WorkoutSchedule", back_populates="user", cascade="all, delete-orphan")
 
 class Exercise(Base):
     __tablename__ = "exercises"
@@ -100,7 +100,7 @@ class Exercise(Base):
     instructions: Mapped[str] = mapped_column(String, nullable=True)
 
     workout_exercises: Mapped[list["WorkoutExercise"]] = relationship(
-        "WorkoutExercise", back_populates="exercise"
+        "WorkoutExercise", back_populates="exercise", cascade="all, delete-orphan"
     )
 
 
@@ -108,7 +108,7 @@ class Workout(Base, TimestampMixin):
     __tablename__ = "workouts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     planned_date: Mapped[datetime.date] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
@@ -118,7 +118,7 @@ class Workout(Base, TimestampMixin):
 
     user: Mapped["User"] = relationship("User", back_populates="workouts")
     workout_exercises: Mapped[list["WorkoutExercise"]] = relationship(
-        "WorkoutExercise", back_populates="workout"
+        "WorkoutExercise", back_populates="workout", cascade="all, delete-orphan"
     )
     
 
@@ -126,9 +126,9 @@ class WorkoutExercise(Base):
     __tablename__ = "workout_exercises"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id"), nullable=False)
+    workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id", ondelete="CASCADE"), nullable=False)
     exercise_id: Mapped[int] = mapped_column(
-        ForeignKey("exercises.id"), nullable=False
+        ForeignKey("exercises.id", ondelete="CASCADE"), nullable=False
     )
     sets: Mapped[int] = mapped_column(Integer, nullable=True)
     reps: Mapped[str] = mapped_column(String, nullable=True)
@@ -144,7 +144,7 @@ class WorkoutSchedule(Base):
     __tablename__ = "workout_schedules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     day: Mapped[WorkoutScheduleDayEnum] = mapped_column(Enum(WorkoutScheduleDayEnum), nullable=False)
     notification_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
 
