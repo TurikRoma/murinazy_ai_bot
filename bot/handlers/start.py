@@ -44,3 +44,21 @@ async def start_registration_callback(query: CallbackQuery, state: FSMContext):
     Обработка нажатия кнопки 'Начать' для старта регистрации.
     """
     await start_registration_process(query, state)
+
+
+# --- Временный обработчик для получения file_id гифок ---
+# TODO: Удалить этот обработчик после получения всех file_id
+@router.message(F.animation)
+async def get_animation_file_id(message: Message):
+    """
+    Этот обработчик ловит гифки, отправленные конкретным пользователем,
+    и возвращает их file_id.
+    """
+    # Проверяем, что сообщение пришло от разрешенного пользователя
+    if message.from_user.id == 970281922:
+        await message.reply(
+            f"<b>File ID для этой гифки:</b>\n\n"
+            f"<code>{message.animation.file_id}</code>\n\n"
+            f"Скопируй его и сохрани в базу данных."
+        )
+# --- Конец временного обработчика ---

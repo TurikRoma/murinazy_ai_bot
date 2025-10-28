@@ -65,3 +65,4 @@ def get_next_rank_threshold(score: int) -> tuple[int, str] | None:
     # Если пользователь уже достиг максимального звания
     return None
 
+
