@@ -384,11 +384,9 @@ async def confirm_registration(
             telegram_id=query.from_user.id,
         )
 
-        # Сохраняем расписание (или удаляем старое, если пользователь пропустил настройку)
+        # Сохраняем расписание, если оно было настроено
         workout_schedule = user_data_dict.get("workout_schedule")
-        if user:
-            # Всегда вызываем функцию, даже если workout_schedule = None
-            # Это нужно, чтобы удалить старое расписание, если пользователь пропустил настройку
+        if user and workout_schedule:
             await create_or_update_user_schedule(
                 session=session,
                 user_id=user.id,

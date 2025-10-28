@@ -2,7 +2,7 @@ import datetime
 from typing import List, Sequence
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +10,48 @@ from database.models import Workout, WorkoutExercise, Exercise, User, WorkoutSta
 from bot.schemas.workout import LLMWorkoutPlan
 from bot.requests.exercise_requests import get_exercise_by_name
 
+
+async def get_exercises_from_last_workouts(
+    session: AsyncSession, user_id: int, limit: int
+) -> list[Exercise]:
+    """
+    Получает уникальный список объектов Exercise из последних `limit` тренировок пользователя.
+    """
+    if not limit > 0:
+        return []
+
+    stmt = (
+        select(Workout)
+        .where(Workout.user_id == user_id)
+        .order_by(desc(Workout.planned_date))
+        .limit(limit)
+        .options(
+            selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.exercise)
+        )
+    )
+    result = await session.execute(stmt)
+    workouts = result.scalars().all()
+
+    unique_exercises = {}
+    for workout in workouts:
+        for we in workout.workout_exercises:
+            if we.exercise and we.exercise.id not in unique_exercises:
+                unique_exercises[we.exercise.id] = we.exercise
+
+    return list(unique_exercises.values())
+
+
+async def get_latest_planned_date(session: AsyncSession, user_id: int) -> date | None:
+    """Возвращает planned_date последней по дате тренировки пользователя."""
+    stmt = (
+        select(Workout.planned_date)
+        .where(Workout.user_id == user_id)
+        .order_by(Workout.planned_date.desc())
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    latest_datetime = result.scalars().first()
+    return latest_datetime.date() if latest_datetime else None
 
 
 async def get_next_workout_for_user(

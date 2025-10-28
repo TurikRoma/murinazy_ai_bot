@@ -9,6 +9,7 @@ from typing import Callable, Dict, Any, Awaitable
 
 from bot.config.settings import settings
 from bot.handlers import main_router
+from bot.handlers.admin import router as admin_router
 from bot.middlewares.db import DbSessionMiddleware, BotObjectMiddleware, WorkoutServiceMiddleware
 from database.connection import create_session_pool, create_tables
 from bot.scheduler import scheduler, restore_scheduled_jobs
@@ -50,7 +51,9 @@ async def main():
     dp.update.middleware(WorkoutServiceMiddleware(workout_service=workout_service))
     
     # Подключение роутеров
+    dp.include_router(admin_router)
     dp.include_router(main_router)
+    
 
     scheduler.start()
 

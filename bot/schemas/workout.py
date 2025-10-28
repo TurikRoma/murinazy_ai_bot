@@ -13,7 +13,7 @@ class ExercisePlan(BaseModel):
     exercise_name: str
     muscle_groups: str
     sets: int
-    reps: str
+    reps: int | str
     rest_seconds: int
     notes: str
 

@@ -6,7 +6,11 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bot.requests import user_requests, exercise_requests, schedule_requests
-from bot.requests.workout_requests import save_weekly_plan
+from bot.requests.workout_requests import (
+    save_weekly_plan,
+    get_exercises_from_last_workouts,
+    get_latest_planned_date,
+)
 from bot.scheduler import scheduler, send_workout_notification
 from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
@@ -30,21 +34,58 @@ class WorkoutService:
             logging.error(f"User with telegram_id {telegram_id} not found.")
             return None
 
-        # 1. Вычисляем "эффективную" неделю для LLM
+        # 1. Вычисляем "эффективную" неделю для LLM.
+        # Мы всегда генерируем план НА СЛЕДУЮЩУЮ неделю, поэтому добавляем +1.
+        # Если current_training_week is None (самый первый запуск), считаем, что текущая неделя 0.
+        next_week = (user.current_training_week or 0) + 1
         effective_week = calculate_effective_training_week(
-            user.current_training_week or 1, user.fitness_level.value
+            next_week, user.fitness_level.value
         )
 
         # 2. Генерация плана через LLM с retry-логикой
         plan = None
         for attempt in range(2):
             try:
-                all_exercises = await exercise_requests.get_exercises_by_equipment(
-                    session, user.equipment_type
-                )
-                plan = await llm_service.generate_workout_plan(
-                    user, all_exercises, effective_week
-                )
+                if effective_week == 1:
+                    # Начало нового цикла: ищем новые упражнения
+                    all_exercises = await exercise_requests.get_exercises_by_equipment(
+                        session, user.equipment_type
+                    )
+                    banned_exercises = await get_exercises_from_last_workouts(
+                        session, user.id, user.workout_frequency or 1
+                    )
+                    plan = await llm_service.generate_workout_plan(
+                        user=user,
+                        effective_training_week=effective_week,
+                        available_exercises=all_exercises,
+                        banned_exercises=banned_exercises,
+                    )
+                else:
+                    # Середина цикла: используем те же упражнения
+                    fixed_exercises = await get_exercises_from_last_workouts(
+                        session, user.id, user.workout_frequency or 1
+                    )
+                    if not fixed_exercises:
+                        logging.error(
+                            f"Не найдены упражнения для пользователя {user.id} в середине цикла. "
+                            f"Попытка сгенерировать заново."
+                        )
+                        # Откатываемся к логике 1-й недели, если что-то пошло не так
+                        all_exercises = await exercise_requests.get_exercises_by_equipment(
+                            session, user.equipment_type
+                        )
+                        plan = await llm_service.generate_workout_plan(
+                            user=user,
+                            effective_training_week=effective_week,
+                            available_exercises=all_exercises
+                        )
+                    else:
+                        plan = await llm_service.generate_workout_plan(
+                            user=user,
+                            effective_training_week=effective_week,
+                            fixed_exercises=fixed_exercises
+                        )
+
                 logging.info(f"LLM generated plan for user {user.telegram_id}: {plan.model_dump_json(indent=2)}")
                 break  # Успешная генерация, выходим из цикла
             except Exception as e:
@@ -75,7 +116,7 @@ class WorkoutService:
             return None # Если не удалось сохранить, выходим
 
         # 5. Инкремент недели пользователя
-        await user_requests.increment_user_training_week(session, user.id)
+        await user_requests.increment_user_training_week(session, user.id, week_to_set=next_week)
         
         # 6. Планирование уведомлений
         logging.info(f"Начинаю планирование {len(workouts)} тренировок для пользователя {user.telegram_id}")
@@ -122,17 +163,27 @@ class WorkoutService:
         now = datetime.now()
 
         if not user_schedule:
-            # Новая логика: планируем только до конца текущей недели.
-            # Понедельник - 0, Воскресенье - 6
-            today_weekday = now.weekday()
-            # +1 чтобы включить сегодняшний день
-            days_left_in_week = 6 - today_weekday + 1
+            latest_planned_date = await get_latest_planned_date(session, user_id)
 
-            # Планируем не больше тренировок, чем запрошено и чем дней осталось в неделе
-            workouts_to_schedule = min(num_workouts, days_left_in_week)
-
-            # Генерируем даты на оставшиеся дни, начиная с СЕГОДНЯ
-            return [now + timedelta(days=i) + timedelta(minutes=1) for i in range(workouts_to_schedule)]
+            if not latest_planned_date:
+                # Первый запуск для пользователя: со следующего дня до конца недели.
+                start_point = now.date() + timedelta(days=1)
+                # +1 т.к. weekday() Понедельник=0, а нам нужно кол-во дней.
+                days_left_in_week = 6 - start_point.weekday() + 1
+                workouts_to_schedule = min(num_workouts, days_left_in_week)
+                return [
+                    datetime.combine(start_point + timedelta(days=i), time(12, 0))
+                    for i in range(workouts_to_schedule)
+                ]
+            else:
+                # Последующие запуски: начинаем с понедельника недели,
+                # следующей за последней тренировкой.
+                days_to_add = 7 - latest_planned_date.weekday()
+                start_of_next_week = latest_planned_date + timedelta(days=days_to_add)
+                return [
+                    datetime.combine(start_of_next_week + timedelta(days=i), time(12, 0))
+                    for i in range(num_workouts)
+                ]
 
         weekday_map = {
             "понедельник": 0, "вторник": 1, "среда": 2, "четверг": 3,
