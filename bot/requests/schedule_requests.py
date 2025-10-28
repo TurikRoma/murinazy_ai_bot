@@ -8,11 +8,12 @@ import datetime
 
 
 async def create_or_update_user_schedule(
-    session: AsyncSession, user_id: int, schedule_data: dict[str, str]
+    session: AsyncSession, user_id: int, schedule_data: dict[str, str] | None
 ):
     """
     Создает или обновляет расписание тренировок пользователя.
-    Сначала удаляет старое расписание, затем создает новое.
+    Сначала удаляет старое расписание, затем создает новое (если schedule_data не None).
+    Если schedule_data равен None, просто удаляет старое расписание.
     """
     # 1. Находим пользователя по telegram_id, чтобы получить его внутренний id
     user_query = await session.execute(select(User).where(User.id == user_id))
@@ -25,7 +26,11 @@ async def create_or_update_user_schedule(
     await session.execute(delete(WorkoutSchedule).where(WorkoutSchedule.user_id == user.id))
     await session.commit()
 
-    # 3. Создаем новые записи расписания
+    # 3. Если schedule_data равен None, просто удаляем старое расписание и выходим
+    if schedule_data is None:
+        return
+
+    # 4. Создаем новые записи расписания
     new_schedules = []
     for day_abbr, time_str in schedule_data.items():
         day_full_name = DAYS_OF_WEEK_RU_FULL.get(day_abbr)
