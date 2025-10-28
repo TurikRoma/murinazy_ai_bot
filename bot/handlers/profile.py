@@ -7,6 +7,7 @@ from bot.handlers.start import start_registration_process
 from bot.keyboards.registration import get_profile_reply_keyboard, get_profile_inline_keyboard
 from bot.requests.user_requests import get_user_by_telegram_id
 from bot.requests.schedule_requests import get_user_schedule
+from bot.utils.rank_utils import get_rank_by_score, get_next_rank_threshold
 
 router = Router()
 
@@ -59,6 +60,21 @@ def format_user_profile(user) -> str:
     Форматирует данные пользователя для красивого отображения в профиле.
     """
     profile_text = "<b>👤 Ваш профиль</b>\n\n"
+    
+    # Отображаем очки и звание в самом верху, красиво оформленные
+    user_score = user.score or 0
+    user_rank = get_rank_by_score(user_score)
+    next_rank_info = get_next_rank_threshold(user_score)
+    
+    profile_text += f"🏆 <b>Звание:</b> {user_rank}\n"
+    profile_text += f"⭐ <b>Очки:</b> {user_score}"
+    
+    if next_rank_info:
+        next_threshold, next_rank = next_rank_info
+        points_to_next = next_threshold - user_score
+        profile_text += f" (до <b>{next_rank}</b> осталось {points_to_next} очков)"
+    
+    profile_text += "\n" + "─" * 20 + "\n\n"
     
     # Определяем порядок ключей для красивого вывода
     fields = [

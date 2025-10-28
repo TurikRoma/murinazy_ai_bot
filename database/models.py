@@ -93,6 +93,7 @@ class User(Base, TimestampMixin):
     trainer_style: Mapped[TrainerStyleEnum] = mapped_column(
         Enum(TrainerStyleEnum), nullable=True
     )
+    score: Mapped[int] = mapped_column(Integer, default=0, nullable=False, server_default="0")
 
     workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
     workout_schedules: Mapped[list["WorkoutSchedule"]] = relationship("WorkoutSchedule", back_populates="user", cascade="all, delete-orphan")

@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.requests.user_requests import get_user_by_telegram_id
+from bot.requests.user_requests import get_user_by_telegram_id, add_score_to_user
 from bot.requests.workout_requests import get_workout_with_exercises, update_workout_status, get_next_workout_for_user
 from bot.services.workout_service import WorkoutService
 from bot.services.llm_service import llm_service
@@ -103,9 +103,10 @@ async def workout_completed_handler(query: CallbackQuery, session: AsyncSession)
         "✅ Отлично, тренировка отмечена как завершенная!", show_alert=True
     )
 
-    # Ищем следующую тренировку, чтобы анонсировать ее
+    # Начисляем очки за выполнение тренировки и ищем следующую тренировку
     user = await get_user_by_telegram_id(session, query.from_user.id)
     if user:
+        await add_score_to_user(session, user.id, points=1)
         next_workout = await get_next_workout_for_user(session, user.id)
         if next_workout:
             # Словарь для корректного склонения дней недели

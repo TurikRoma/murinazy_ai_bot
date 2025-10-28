@@ -46,3 +46,13 @@ async def increment_user_training_week(session: AsyncSession, user_id: int) -> U
         await session.commit()
         await session.refresh(user)
     return user
+
+
+async def add_score_to_user(session: AsyncSession, user_id: int, points: int = 1) -> User | None:
+    """Добавляет очки пользователю за выполнение тренировки."""
+    user = await session.get(User, user_id)
+    if user:
+        user.score = (user.score or 0) + points
+        await session.commit()
+        await session.refresh(user)
+    return user
