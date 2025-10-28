@@ -33,3 +33,16 @@ async def create_or_update_user(
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def increment_user_training_week(session: AsyncSession, user_id: int) -> User | None:
+    """Увеличивает счетчик недель тренировок пользователя на 1."""
+    user = await session.get(User, user_id)
+    if user:
+        if user.current_training_week is None:
+            user.current_training_week = 1
+        else:
+            user.current_training_week += 1
+        await session.commit()
+        await session.refresh(user)
+    return user

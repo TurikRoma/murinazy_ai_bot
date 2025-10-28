@@ -14,3 +14,22 @@ def get_workout_now_keyboard(workout_id: int) -> InlineKeyboardMarkup:
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_workout_actions_keyboard(workout_id: int) -> InlineKeyboardMarkup:
+    """
+    Возвращает клавиатуру с действиями для тренировки (завершить/пропустить).
+    """
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Завершил", callback_data=f"workout_completed_{workout_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Пропустил", callback_data=f"workout_skipped_{workout_id}"
+                ),
+            ]
+        ]
+    )
+    return keyboard

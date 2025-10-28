@@ -12,14 +12,14 @@ from bot.requests.exercise_requests import get_exercise_by_name
 
 
 
-async def get_last_workout_for_user(
+async def get_next_workout_for_user(
     session: AsyncSession, user_id: int
 ) -> Workout | None:
-    """Получает последнюю по дате создания тренировку пользователя."""
+    """Получает следующую по дате планирования тренировку пользователя."""
     stmt = (
         select(Workout)
-        .where(Workout.user_id == user_id)
-        .order_by(Workout.created_at.desc())
+        .where(Workout.user_id == user_id, Workout.planned_date > datetime.datetime.now(), Workout.status == WorkoutStatusEnum.planned)
+        .order_by(Workout.planned_date.asc())
         .limit(1)
     )
     result = await session.execute(stmt)
@@ -131,22 +131,33 @@ async def save_weekly_plan(
     Сохраняет сгенерированный недельный план тренировок в БД.
     """
     created_workouts = []
-    for idx, session_data in enumerate(plan.sessions):
+    # Используем `workout_plan` вместо `sessions`
+    for idx, day_plan in enumerate(plan.workout_plan):
+        # Если дат меньше, чем сгенерировано тренировок, прекращаем сохранение
+        if idx >= len(workout_dates):
+            break
+
         # Создаем саму тренировку
-        workout = Workout(user_id=user_id, planned_date=workout_dates[idx])
+        workout = Workout(
+            user_id=user_id,
+            planned_date=workout_dates[idx],
+            warm_up=day_plan.warm_up,
+            cool_down=day_plan.cool_down,
+        )
         session.add(workout)
         await session.flush()  # Получаем ID тренировки
 
         # Добавляем упражнения к тренировке
-        for order, exercise_data in enumerate(session_data.exercises):
-            exercise = await get_exercise_by_name(session, exercise_data.name)
+        for exercise_data in day_plan.exercises:
+            # Имя упражнения теперь в `exercise_name`
+            exercise = await get_exercise_by_name(session, exercise_data.exercise_name)
             if exercise:
                 workout_exercise = WorkoutExercise(
                     workout_id=workout.id,
                     exercise_id=exercise.id,
                     sets=exercise_data.sets,
                     reps=exercise_data.reps,
-                    order=order,
+                    order=exercise_data.order,  # Сохраняем порядок из LLM
                 )
                 session.add(workout_exercise)
         created_workouts.append(workout)

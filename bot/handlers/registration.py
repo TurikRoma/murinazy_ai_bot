@@ -377,39 +377,51 @@ async def confirm_registration(
 
         await state.clear()
 
-        # Генерация, планирование и получение даты ближайшей тренировки
-        next_workout_datetime = await workout_service.create_and_schedule_weekly_workout(
+        # Генерация, планирование и получение summary и даты
+        result = await workout_service.create_and_schedule_weekly_workout(
             session, user.telegram_id
         )
 
-        if next_workout_datetime:
-            # Ручное форматирование даты для надежности
-            day_en = next_workout_datetime.strftime('%A')
-            day_ru = DAYS_OF_WEEK_RU.get(day_en, day_en)
-            formatted_date = f"{day_ru}, {next_workout_datetime.strftime('%d.%m.%Y в %H:%M')}"
+        if result:
+            plan_summary, next_workout_datetime = result
 
-            final_text = (
-                "✅ Ваш план тренировок на неделю готов!\n\n"
-                f"🗓️ Ваша следующая тренировка запланирована на <b>{formatted_date}</b>. "
-                "Я пришлю уведомление в назначенное время. Хотите посмотреть план уже сейчас?"
+            summary_text = (
+                f"<b>Тип программы:</b> {plan_summary.periodization_type}\n"
+                f"<b>Сплит:</b> {plan_summary.split_type}\n"
+                f"<b>Цель на неделю:</b> {plan_summary.primary_goal}"
             )
+
+            if next_workout_datetime:
+                # Ручное форматирование даты для надежности
+                day_en = next_workout_datetime.strftime('%A')
+                day_ru = DAYS_OF_WEEK_RU.get(day_en, day_en)
+                formatted_date = f"{day_ru}, {next_workout_datetime.strftime('%d.%m.%Y в %H:%M')}"
+
+                final_text = (
+                    f"✅ Ваш план тренировок на неделю готов!\n\n"
+                    f"{summary_text}\n\n"
+                    f"🗓️ Ваша следующая тренировка запланирована на <b>{formatted_date}</b>. "
+                    "Я пришлю уведомление в назначенное время. Хотите посмотреть план уже сейчас?"
+                )
+            else:
+                final_text = (
+                    f"✅ Ваш план тренировок на неделю готов!\n\n"
+                    f"{summary_text}\n\n"
+                    "На этой неделе запланированных тренировок нет. "
+                    "Новый план будет создан в начале следующей недели."
+                )
+
             await loading_message.edit_text(
                 final_text,
                 reply_markup=get_post_registration_keyboard(),
                 parse_mode="HTML"
             )
         else:
-            # Если тренировок на этой неделе нет
-            final_text = (
-                "✅ Ваш план тренировок на неделю готов!\n\n"
-                "На этой неделе запланированных тренировок нет. "
-                "Новый план будет создан в начале следующей недели. "
-                "Хотите посмотреть детали плана?"
-            )
+            # Если workout_service вернул None
             await loading_message.edit_text(
-                final_text,
+                "❌ Не удалось создать план тренировок. "
+                "Пожалуйста, попробуйте позже или свяжитесь с поддержкой.",
                 reply_markup=get_post_registration_keyboard(),
-                parse_mode="HTML"
             )
 
     except Exception as e:

@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from bot.keyboards.workout import get_workout_actions_keyboard
 from bot.requests.workout_requests import (
     get_workout_with_exercises,
     get_future_planned_workouts,
@@ -39,24 +40,18 @@ async def send_workout_notification(
         )
         message = (
             f"🔥 <b>Ваша тренировка на сегодня готова!</b>\n\n"
+            f"<b>Разминка:</b> {workout.warm_up}\n\n"
             f"Вот ваш план:\n{exercises_text}\n\n"
+            f"<b>Заминка:</b> {workout.cool_down}\n\n"
             f"Не забудьте сделать разминку перед началом."
         )
 
-        # TODO: Добавить кнопку "Завершить тренировку"
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="✅ Завершил", callback_data=f"workout_completed_{workout_id}"
-                    ),
-                    InlineKeyboardButton(
-                        text="❌ Пропустил", callback_data=f"workout_skipped_{workout_id}"
-                    ),
-                ]
-            ]
+        await bot.send_message(
+            user_id,
+            message,
+            reply_markup=get_workout_actions_keyboard(workout_id),
+            parse_mode="HTML"
         )
-        await bot.send_message(user_id, message, reply_markup=keyboard)
         logger.info(
             f"Уведомление о тренировке #{workout_id} успешно отправлено пользователю {user_id}"
         )

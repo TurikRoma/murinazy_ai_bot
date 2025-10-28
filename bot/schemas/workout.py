@@ -1,21 +1,34 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List
 
 
-class LLMWorkoutExercise(BaseModel):
-    name: str
-    muscle_group: str
+class PlanSummary(BaseModel):
+    periodization_type: str
+    split_type: str
+    primary_goal: str
+
+
+class ExercisePlan(BaseModel):
+    order: int
+    exercise_name: str
+    muscle_groups: str
     sets: int
     reps: str
+    rest_seconds: int
+    notes: str
 
 
-class LLMWorkoutSession(BaseModel):
-    session: int
-    exercises: List[LLMWorkoutExercise]
+class WorkoutDayPlan(BaseModel):
+    day: int
+    focus: str
+    warm_up: str
+    exercises: List[ExercisePlan]
+    cool_down: str
 
 
 class LLMWorkoutPlan(BaseModel):
-    sessions: List[LLMWorkoutSession]
+    plan_summary: PlanSummary
+    workout_plan: List[WorkoutDayPlan]
 
 
 

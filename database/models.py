@@ -80,6 +80,7 @@ class User(Base, TimestampMixin):
         Enum(FitnessLevelEnum), nullable=True
     )
     workout_frequency: Mapped[int] = mapped_column(Integer, nullable=True)
+    current_training_week: Mapped[int] = mapped_column(Integer, nullable=True)
     equipment_type: Mapped[EquipmentTypeEnum] = mapped_column(
         Enum(EquipmentTypeEnum), nullable=True
     )
@@ -117,6 +118,8 @@ class Workout(Base, TimestampMixin):
     status: Mapped[WorkoutStatusEnum] = mapped_column(
         Enum(WorkoutStatusEnum), default=WorkoutStatusEnum.planned
     )
+    warm_up: Mapped[str | None] = mapped_column(String, nullable=True)
+    cool_down: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="workouts")
     workout_exercises: Mapped[list["WorkoutExercise"]] = relationship(
