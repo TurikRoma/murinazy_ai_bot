@@ -1,5 +1,5 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
 def get_fitness_level_keyboard() -> InlineKeyboardMarkup:
@@ -122,5 +122,36 @@ def get_workout_schedule_keyboard() -> InlineKeyboardMarkup:
     builder.row(
         InlineKeyboardButton(text="Настроить", callback_data="schedule_configure"),
         InlineKeyboardButton(text="Пропустить", callback_data="schedule_skip"),
+    )
+    return builder.as_markup()
+
+
+def get_trainer_style_keyboard() -> InlineKeyboardMarkup:
+    """Создает клавиатуру для выбора стиля AI тренера."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="Гоггинс", callback_data="trainer_goggins"),
+        InlineKeyboardButton(text="Шварцнегер", callback_data="trainer_schwarzenegger"),
+    )
+    builder.row(
+        InlineKeyboardButton(text="Колеман", callback_data="trainer_coleman"),
+    )
+    return builder.as_markup()
+
+
+def get_profile_reply_keyboard() -> ReplyKeyboardMarkup:
+    """Создает Reply клавиатуру с кнопкой профиля (постоянная внизу)."""
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        KeyboardButton(text="👤 Профиль"),
+    )
+    return builder.as_markup(resize_keyboard=True, persistent=True)
+
+
+def get_profile_inline_keyboard() -> InlineKeyboardMarkup:
+    """Создает Inline клавиатуру для профиля с кнопкой изменения."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="✏️ Изменить", callback_data="edit_profile"),
     )
     return builder.as_markup()

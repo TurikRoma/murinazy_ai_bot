@@ -48,6 +48,12 @@ class EquipmentTypeEnum(str, enum.Enum):
     bodyweight = "bodyweight"
 
 
+class TrainerStyleEnum(str, enum.Enum):
+    goggins = "goggins"
+    schwarzenegger = "schwarzenegger"
+    coleman = "coleman"
+
+
 class WorkoutStatusEnum(str, enum.Enum):
     planned = "planned"
     completed = "completed"
@@ -83,6 +89,9 @@ class User(Base, TimestampMixin):
     current_training_week: Mapped[int] = mapped_column(Integer, nullable=True)
     equipment_type: Mapped[EquipmentTypeEnum] = mapped_column(
         Enum(EquipmentTypeEnum), nullable=True
+    )
+    trainer_style: Mapped[TrainerStyleEnum] = mapped_column(
+        Enum(TrainerStyleEnum), nullable=True
     )
 
     workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user", cascade="all, delete-orphan")

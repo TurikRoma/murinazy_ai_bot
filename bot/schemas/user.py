@@ -7,6 +7,7 @@ from database.models import (
     GoalEnum,
     FitnessLevelEnum,
     EquipmentTypeEnum,
+    TrainerStyleEnum,
 )
 
 
@@ -20,3 +21,4 @@ class UserRegistrationSchema(BaseModel):
     target_weight: Optional[float] = Field(None, ge=30, le=300)
     workout_frequency: Optional[int] = Field(None, ge=1, le=7)
     equipment_type: Optional[EquipmentTypeEnum] = None
+    trainer_style: Optional[TrainerStyleEnum] = None

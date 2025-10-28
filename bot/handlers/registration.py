@@ -21,6 +21,8 @@ from bot.keyboards.registration import (
     get_post_registration_keyboard,
     get_workout_schedule_keyboard,
     get_workout_schedule_day_keyboard,
+    get_trainer_style_keyboard,
+    get_profile_reply_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
 from bot.requests import user_requests
@@ -43,6 +45,7 @@ HUMAN_READABLE_NAMES = {
     "target_weight": "Целевой вес",
     "workout_frequency": "Частота тренировок",
     "equipment_type": "Тип оборудования",
+    "trainer_style": "Стиль тренера",
     "workout_schedule": "Расписание",
     # --- значения ---
     "male": "Мужской",
@@ -55,6 +58,9 @@ HUMAN_READABLE_NAMES = {
     "maintenance": "Поддержание формы",
     "gym": "Тренажерный зал",
     "bodyweight": "Свой вес",
+    "goggins": "Гоггинс",
+    "schwarzenegger": "Шварцнегер",
+    "coleman": "Колеман",
 }
 
 # Словарь для ручного перевода дней недели (независимо от локали)
@@ -294,11 +300,22 @@ async def process_workout_schedule(query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(RegistrationStates.waiting_for_equipment_type, F.data.startswith("equip_"))
 async def process_equipment_type(query: CallbackQuery, state: FSMContext):
-    """
-    Обработка выбора оборудования и переход к подтверждению.
-    """
+    """Обработка выбора оборудования и переход к выбору стиля тренера."""
     equipment = query.data.split("_")[1]
     await state.update_data(equipment_type=equipment)
+    await state.set_state(RegistrationStates.waiting_for_trainer_style)
+    await query.message.edit_text(
+        "Какой стиль AI тренера тебе больше нравится?",
+        reply_markup=get_trainer_style_keyboard(),
+    )
+    await query.answer()
+
+
+@router.callback_query(RegistrationStates.waiting_for_trainer_style, F.data.startswith("trainer_"))
+async def process_trainer_style(query: CallbackQuery, state: FSMContext):
+    """Обработка выбора стиля тренера и переход к подтверждению."""
+    trainer = query.data.split("_")[1]
+    await state.update_data(trainer_style=trainer)
     await state.set_state(RegistrationStates.waiting_for_confirmation)
 
     user_data = await state.get_data()
@@ -310,7 +327,7 @@ async def process_equipment_type(query: CallbackQuery, state: FSMContext):
     order = [
         "gender", "age", "height", "current_weight", "fitness_level", 
         "goal", "target_weight", "workout_frequency", "workout_schedule", 
-        "equipment_type"
+        "equipment_type", "trainer_style"
     ]
 
     for key in order:
@@ -351,10 +368,6 @@ async def confirm_registration(
     """
     Подтверждение регистрации, сохранение пользователя и запуск генерации плана.
     """
-    loading_message = await query.message.edit_text(
-        "Одну минуту, создаю для тебя индивидуальный план тренировок... 🤖"
-    )
-
     try:
         user_data_dict = await state.get_data()
         registration_schema = UserRegistrationSchema(**user_data_dict)
@@ -376,11 +389,37 @@ async def confirm_registration(
             )
 
         await state.clear()
+        await query.message.delete()
+        # Показываем благодарность и информацию о профиле
+        thanks_message = (
+            "🙏 <b>Спасибо, что указали свои данные!</b>\n\n"
+            "Я сохранил всю информацию в вашем профиле. "
+            "Если захотите что-то изменить, просто нажмите кнопку <b>👤 Профиль</b> внизу экрана."
+        )
+        
+        await query.answer()
+        
+        # Отправляем сообщение с благодарностью и Reply клавиатурой
+        await query.message.answer(
+            thanks_message,
+            parse_mode="HTML",
+            reply_markup=get_profile_reply_keyboard()
+        )
+
+        # Небольшая пауза перед генерацией плана
+        await asyncio.sleep(0.5)
+
+        # Показываем загрузку и начинаем генерацию плана
+        loading_message = await query.message.answer(
+            "🤖 Создаю для тебя индивидуальный план тренировок на неделю..."
+        )
 
         # Генерация, планирование и получение summary и даты
         result = await workout_service.create_and_schedule_weekly_workout(
             session, user.telegram_id
         )
+
+        logging.info(f"Result from create_and_schedule_weekly_workout for user {user.telegram_id}: {result}")
 
         if result:
             plan_summary, next_workout_datetime = result
@@ -398,14 +437,14 @@ async def confirm_registration(
                 formatted_date = f"{day_ru}, {next_workout_datetime.strftime('%d.%m.%Y в %H:%M')}"
 
                 final_text = (
-                    f"✅ Ваш план тренировок на неделю готов!\n\n"
+                    f"✅ <b>Ваш план тренировок на неделю готов!</b>\n\n"
                     f"{summary_text}\n\n"
                     f"🗓️ Ваша следующая тренировка запланирована на <b>{formatted_date}</b>. "
                     "Я пришлю уведомление в назначенное время. Хотите посмотреть план уже сейчас?"
                 )
             else:
                 final_text = (
-                    f"✅ Ваш план тренировок на неделю готов!\n\n"
+                    f"✅ <b>Ваш план тренировок на неделю готов!</b>\n\n"
                     f"{summary_text}\n\n"
                     "На этой неделе запланированных тренировок нет. "
                     "Новый план будет создан в начале следующей недели."
@@ -426,11 +465,18 @@ async def confirm_registration(
 
     except Exception as e:
         logging.exception("Error during registration confirmation")
-        await loading_message.edit_text(
-            "❌ Произошла непредвиденная ошибка при создании вашего плана. "
-            "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
-            "Если проблема повторится, свяжитесь с поддержкой."
-        )
+        try:
+            await query.message.edit_text(
+                "❌ Произошла непредвиденная ошибка при создании вашего плана. "
+                "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
+                "Если проблема повторится, свяжитесь с поддержкой."
+            )
+        except:
+            await query.message.answer(
+                "❌ Произошла непредвиденная ошибка при создании вашего плана. "
+                "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
+                "Если проблема повторится, свяжитесь с поддержкой."
+            )
 
     finally:
         await query.answer()

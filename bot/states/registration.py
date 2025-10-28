@@ -15,6 +15,7 @@ class RegistrationStates(StatesGroup):
     waiting_for_workout_schedule_day = State()
     waiting_for_workout_schedule_time = State()
     waiting_for_equipment_type = State()
+    waiting_for_trainer_style = State()
     waiting_for_confirmation = State()
 
 
