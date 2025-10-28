@@ -5,7 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bot.keyboards.workout import get_workout_actions_keyboard
+from bot.keyboards.workout import get_start_workout_keyboard
 from bot.requests.workout_requests import (
     get_workout_with_exercises,
     get_future_planned_workouts,
@@ -49,7 +49,7 @@ async def send_workout_notification(
         await bot.send_message(
             user_id,
             message,
-            reply_markup=get_workout_actions_keyboard(workout_id),
+            reply_markup=get_start_workout_keyboard(workout_id),
             parse_mode="HTML"
         )
         logger.info(

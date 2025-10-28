@@ -207,3 +207,18 @@ async def update_workout_status(
         await session.commit()
         await session.refresh(workout)
     return workout
+
+
+async def get_workout_exercise_details(
+    session: AsyncSession, workout_exercise_id: int
+) -> WorkoutExercise | None:
+    """
+    Получает WorkoutExercise со связанным Exercise по ID.
+    """
+    stmt = (
+        select(WorkoutExercise)
+        .where(WorkoutExercise.id == workout_exercise_id)
+        .options(selectinload(WorkoutExercise.exercise))
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
