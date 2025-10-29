@@ -10,6 +10,7 @@ from bot.requests.workout_requests import (
     save_weekly_plan,
     get_exercises_from_last_workouts,
     get_latest_planned_date,
+    get_latest_future_planned_date,
 )
 from bot.scheduler import scheduler, send_workout_notification
 from bot.services.llm_service import llm_service
@@ -156,66 +157,85 @@ class WorkoutService:
         self, session: AsyncSession, user_id: int, num_workouts: int
     ) -> list[datetime]:
         """
-        Вычисляет точные дату и время для N тренировок на основе расписания пользователя.
-        Сначала ищет слоты на текущей неделе. Если их нет, ищет на следующей.
+        Вычисляет даты тренировок со следующей логикой:
+        1. Если у пользователя уже есть будущие тренировки (регенерация), новый план всегда начинается
+           с недели, следующей за последней запланированной тренировкой.
+        2. Если будущих тренировок нет (первая генерация), система пытается запланировать на текущую неделю.
+           Если не получается, планирует на следующую.
         """
-        user_schedule = await schedule_requests.get_user_schedule(session, user_id)
+        latest_future_date = await get_latest_future_planned_date(session, user_id)
         now = datetime.now()
 
-        if not user_schedule:
-            latest_planned_date = await get_latest_planned_date(session, user_id)
+        # --- ЛОГИКА РЕГЕНЕРАЦИИ (когда есть будущий план) ---
+        if latest_future_date:
+            last_date = latest_future_date.date()
+            days_to_add = 7 - last_date.weekday()
+            start_search_date = last_date + timedelta(days=days_to_add)
 
-            if not latest_planned_date:
-                # Первый запуск для пользователя: со следующего дня до конца недели.
-                start_point = now.date() + timedelta(days=1)
-                # +1 т.к. weekday() Понедельник=0, а нам нужно кол-во дней.
-                days_left_in_week = 6 - start_point.weekday() + 1
-                workouts_to_schedule = min(num_workouts, days_left_in_week)
-                return [
-                    datetime.combine(start_point + timedelta(days=i), time(12, 0))
-                    for i in range(workouts_to_schedule)
-                ]
-            else:
-                # Последующие запуски: начинаем с понедельника недели,
-                # следующей за последней тренировкой.
-                days_to_add = 7 - latest_planned_date.weekday()
-                start_of_next_week = latest_planned_date + timedelta(days=days_to_add)
-                return [
-                    datetime.combine(start_of_next_week + timedelta(days=i), time(12, 0))
-                    for i in range(num_workouts)
-                ]
-
-        weekday_map = {
-            "понедельник": 0, "вторник": 1, "среда": 2, "четверг": 3,
-            "пятница": 4, "суббота": 5, "воскресенье": 6
-        }
-        slots = sorted(
-            [(weekday_map[s.day.value], s.notification_time) for s in user_schedule]
-        )
-
-        def find_slots(start_offset, days_to_check, current_dates):
-            """Ищет доступные слоты в заданном диапазоне дней."""
-            for day_offset in range(start_offset, start_offset + days_to_check):
-                if len(current_dates) >= num_workouts:
-                    break
-                check_date = (now + timedelta(days=day_offset)).date()
+            user_schedule = await schedule_requests.get_user_schedule(session, user_id)
+            if not user_schedule:
+                return [datetime.combine(start_search_date + timedelta(days=i), time(12, 0)) for i in range(num_workouts)]
+            
+            # Ищем слоты, начиная с высчитанной даты
+            weekday_map = {"понедельник": 0, "вторник": 1, "среда": 2, "четверг": 3, "пятница": 4, "суббота": 5, "воскресенье": 6}
+            slots = sorted([(weekday_map[s.day.value], s.notification_time) for s in user_schedule])
+            
+            found_dates = []
+            for day_offset in range(14): # Ищем в пределах 2 недель
+                if len(found_dates) >= num_workouts: break
+                check_date = start_search_date + timedelta(days=day_offset)
                 for wday, time_obj in slots:
+                    if len(found_dates) >= num_workouts: break
                     if wday == check_date.weekday():
-                        potential_dt = datetime.combine(check_date, time_obj)
-                        if potential_dt > now:
-                            current_dates.append(potential_dt)
-            return current_dates
+                        found_dates.append(datetime.combine(check_date, time_obj))
+            
+            found_dates.sort()
+            return found_dates[:num_workouts]
 
-        # 1. Ищем слоты на текущей неделе
-        today_weekday = now.weekday()
-        days_to_check_current_week = 7 - today_weekday
-        workout_datetimes = find_slots(0, days_to_check_current_week, [])
+        # --- ЛОГИКА ПЕРВОЙ ГЕНЕРАЦИИ (возвращаем старое поведение) ---
+        user_schedule = await schedule_requests.get_user_schedule(session, user_id)
+        if not user_schedule:
+            # Пользователь без расписания: пытаемся вписать в текущую неделю с завтра
+            start_point = now.date() + timedelta(days=1)
+            days_left_in_week = 7 - start_point.weekday()
+            
+            # Если "завтра" это уже следующая неделя
+            if start_point.weekday() < now.weekday():
+                days_left_in_week = 0
 
-        # 2. Если на текущей неделе ничего не найдено, ищем на следующей
-        if not workout_datetimes:
-            start_offset_next_week = days_to_check_current_week
-            workout_datetimes = find_slots(start_offset_next_week, 7, [])
-        
-        # Сортируем на случай, если в один день несколько слотов, и обрезаем до нужного количества
-        workout_datetimes.sort()
-        return workout_datetimes[:num_workouts]
+            if days_left_in_week > 0:
+                workouts_to_schedule = min(num_workouts, days_left_in_week)
+                return [datetime.combine(start_point + timedelta(days=i), time(12, 0)) for i in range(workouts_to_schedule)]
+            else:
+                # Если не вписались, то со следующего понедельника
+                days_to_add = 7 - now.date().weekday()
+                start_of_next_week = now.date() + timedelta(days=days_to_add)
+                return [datetime.combine(start_of_next_week + timedelta(days=i), time(12, 0)) for i in range(num_workouts)]
+        else:
+            # Пользователь с расписанием: ищем слоты с сегодняшнего дня
+            weekday_map = {"понедельник": 0, "вторник": 1, "среда": 2, "четверг": 3, "пятница": 4, "суббота": 5, "воскресенье": 6}
+            slots = sorted([(weekday_map[s.day.value], s.notification_time) for s in user_schedule])
+
+            def find_slots_from_now(start_offset, days_to_check):
+                dates = []
+                for day_offset in range(start_offset, start_offset + days_to_check):
+                    if len(dates) >= num_workouts: break
+                    check_date = (now + timedelta(days=day_offset)).date()
+                    for wday, time_obj in slots:
+                        if len(dates) >= num_workouts: break
+                        if wday == check_date.weekday():
+                            potential_dt = datetime.combine(check_date, time_obj)
+                            if potential_dt > now:
+                                dates.append(potential_dt)
+                return dates
+
+            # 1. Ищем слоты на текущей неделе (начиная с сегодня)
+            days_left_current_week = 7 - now.weekday()
+            workout_datetimes = find_slots_from_now(0, days_left_current_week)
+
+            # 2. Если на текущей неделе ничего не найдено, ищем на следующей
+            if not workout_datetimes:
+                workout_datetimes = find_slots_from_now(days_left_current_week, 7)
+            
+            workout_datetimes.sort()
+            return workout_datetimes[:num_workouts]

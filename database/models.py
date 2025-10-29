@@ -108,8 +108,8 @@ class Exercise(Base):
     equipment_type: Mapped[EquipmentTypeEnum] = mapped_column(
         Enum(EquipmentTypeEnum), nullable=False
     )
-    video_url: Mapped[str] = mapped_column(String, nullable=True)
-    image_url: Mapped[str] = mapped_column(String, nullable=True)
+    video_id: Mapped[str] = mapped_column(String, nullable=True)
+    gif_id: Mapped[str] = mapped_column(String, nullable=True)
     instructions: Mapped[str] = mapped_column(String, nullable=True)
 
     workout_exercises: Mapped[list["WorkoutExercise"]] = relationship(

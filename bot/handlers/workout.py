@@ -84,15 +84,37 @@ async def send_current_exercise(
     if exercise.instructions:
         caption += f"<i>{exercise.instructions}</i>"
 
-    # Отправляем видео с подписью и клавиатурой
-    sent_message = await message.answer_video(
-        video=exercise.video_url,
-        caption=caption,
-        reply_markup=get_exercise_navigation_keyboard(
-            workout_id, current_index, total_exercises
-        ),
-        parse_mode="HTML",
-    )
+    # Отправляем видео или гифку с подписью и клавиатурой
+    media_id = exercise.video_id or exercise.gif_id
+    
+    if exercise.video_id:
+        sent_message = await message.answer_video(
+            video=exercise.video_id,
+            caption=caption,
+            reply_markup=get_exercise_navigation_keyboard(
+                workout_id, current_index, total_exercises
+            ),
+            parse_mode="HTML",
+        )
+    elif exercise.gif_id:
+        sent_message = await message.answer_animation(
+            animation=exercise.gif_id,
+            caption=caption,
+            reply_markup=get_exercise_navigation_keyboard(
+                workout_id, current_index, total_exercises
+            ),
+            parse_mode="HTML",
+        )
+    else:
+        # Если нет ни видео, ни гифки
+        sent_message = await message.answer(
+            caption,
+            reply_markup=get_exercise_navigation_keyboard(
+                workout_id, current_index, total_exercises
+            ),
+            parse_mode="HTML",
+        )
+
     # Сохраняем ID сообщения, чтобы его можно было удалить
     await state.update_data(last_exercise_message_id=sent_message.message_id)
 
@@ -233,6 +255,12 @@ async def finish_workout_handler(
         user = await get_user_by_telegram_id(session, query.from_user.id)
         if user:
             await add_score_to_user(session, user.id, points=1)
+
+            congrats_message = (
+                "Красава! Ты полностью выполнил тренировку и заработал +1 очко. 🏆\n\n"
+                "Загляни в профиль, чтобы узнать, сколько очков осталось до нового звания!\n\n"
+            )
+
             next_workout = await get_next_workout_for_user(session, user.id)
             if next_workout:
                 days_ru = {
@@ -242,15 +270,18 @@ async def finish_workout_handler(
                 day_of_week = days_ru.get(next_workout.planned_date.weekday(), "")
                 date_str = next_workout.planned_date.strftime('%d.%m.%Y')
                 message_text = (
-                    f"Так держать! 🚀\n\n"
                     f"Следующее испытание ждет тебя в <b>{day_of_week}</b>, "
                     f"<b>{date_str}</b>. Не пропусти!"
                 )
-                await query.message.answer(message_text, parse_mode="HTML")
+                await query.message.answer(
+                    congrats_message + message_text, parse_mode="HTML"
+                )
             else:
                 await query.message.answer(
-                    "Отличная работа! Это была последняя запланированная тренировка. "
-                    "Скоро я подготовлю для тебя новый план."
+                    congrats_message
+                    + "Отличная работа! Это была последняя запланированная на неделе тренировка. "
+                    "Скоро я подготовлю для тебя новый план.",
+                    parse_mode="HTML",
                 )
     else:
         # Досрочное завершение
@@ -289,7 +320,7 @@ async def workout_skipped_handler(query: CallbackQuery, session: AsyncSession):
             await query.message.answer(message_text, parse_mode="HTML")
         else:
             await query.message.answer(
-                "Это была последняя запланированная тренировка. "
+                "Это была последняя запланированная на неделе тренировка. "
                 "Я скоро подготовлю новый план, чтобы ты мог вернуться к занятиям."
             )
 

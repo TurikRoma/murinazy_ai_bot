@@ -2,9 +2,11 @@ from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
+from aiogram.enums import ContentType
 
 from bot.keyboards.registration import get_start_keyboard, get_gender_keyboard
 from bot.states.registration import RegistrationStates
+from bot.config.settings import settings
 
 router = Router()
 
@@ -46,19 +48,29 @@ async def start_registration_callback(query: CallbackQuery, state: FSMContext):
     await start_registration_process(query, state)
 
 
-# --- Временный обработчик для получения file_id гифок ---
-# TODO: Удалить этот обработчик после получения всех file_id
-@router.message(F.animation)
-async def get_animation_file_id(message: Message):
+# --- Обработчик для получения file_id медиа (только для админа) ---
+@router.message(
+    lambda message: message.from_user.id == settings.ADMIN_ID,
+    F.content_type.in_({ContentType.VIDEO, ContentType.ANIMATION})
+)
+async def get_media_file_id(message: Message):
     """
-    Этот обработчик ловит гифки, отправленные конкретным пользователем,
+    Этот обработчик ловит видео и гифки, отправленные админом,
     и возвращает их file_id.
     """
-    # Проверяем, что сообщение пришло от разрешенного пользователя
-    if message.from_user.id == 970281922:
+    file_id = None
+    media_type = None
+
+    if message.video:
+        file_id = message.video.file_id
+        media_type = "video"
+    elif message.animation:
+        file_id = message.animation.file_id
+        media_type = "gif"
+
+    if file_id:
         await message.reply(
-            f"<b>File ID для этой гифки:</b>\n\n"
-            f"<code>{message.animation.file_id}</code>\n\n"
-            f"Скопируй его и сохрани в базу данных."
+            f"<b>Тип:</b> <code>{media_type}</code>\n"
+            f"<b>File ID:</b> <code>{file_id}</code>"
         )
-# --- Конец временного обработчика ---
+# --- Конец обработчика ---

@@ -75,6 +75,18 @@ async def get_last_workout_date(session: AsyncSession, user_id: int) -> datetime
     return result.scalars().first()
 
 
+async def get_latest_future_planned_date(session: AsyncSession, user_id: int) -> datetime.datetime | None:
+    """Возвращает planned_date последней БУДУЩЕЙ тренировки пользователя."""
+    stmt = (
+        select(Workout.planned_date)
+        .where(Workout.user_id == user_id, Workout.planned_date > datetime.datetime.now())
+        .order_by(Workout.planned_date.desc())
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().first()
+
+
 async def create_workout_with_exercises(session: AsyncSession, user_id: int, workout_plan: "LLMWorkoutPlan") -> Workout:
     """Создает новую тренировку и связанные с ней упражнения."""
     
