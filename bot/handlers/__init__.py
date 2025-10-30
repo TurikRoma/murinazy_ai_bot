@@ -1,5 +1,22 @@
 from aiogram import Router
-from . import start, registration, profile, workout
+from . import (
+    start,
+    registration,
+    profile,
+    workout,
+    admin,
+    payment,
+)
+
+# Порядок роутеров важен
+routers = [
+    admin.router,
+    start.router,
+    registration.router,
+    profile.router,
+    payment.router,
+    workout.router,
+]
 
 # Главный роутер для всех обработчиков
 main_router = Router()

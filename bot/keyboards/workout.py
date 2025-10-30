@@ -42,23 +42,40 @@ def get_exercise_navigation_keyboard(
     Возвращает клавиатуру для навигации в процессе тренировки.
     """
     buttons = []
+    row = []
+    if current_index > 0:
+        # Эта кнопка не нужна, т.к. мы не удаляем сообщения
+        # row.append(InlineKeyboardButton(text="⬅️ Назад", callback_data="prev_exercise"))
+        pass
 
-    # Если это не последнее упражнение, добавляем кнопку "Следующее"
     if current_index < total_exercises - 1:
-        next_button = InlineKeyboardButton(
-            text="Следующее упражнение ➡️", callback_data="next_exercise"
-        )
-        # Кнопка "Завершить" есть всегда, но с разным текстом
-        finish_button = InlineKeyboardButton(
-            text="⏹️ Завершить досрочно", callback_data=f"finish_workout_{workout_id}"
-        )
-        buttons.append([next_button])
-        buttons.append([finish_button])
-    else:
-        # На последнем упражнении только кнопка завершения
-        finish_button = InlineKeyboardButton(
-            text="✅ Завершить тренировку", callback_data=f"finish_workout_{workout_id}"
-        )
-        buttons.append([finish_button])
+        row.append(InlineKeyboardButton(text="➡️ Далее", callback_data="next_exercise"))
+    
+    if row:
+        buttons.append(row)
 
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="✅ Завершить", callback_data=f"finish_workout_{workout_id}"
+            )
+        ]
+    )
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_notification_keyboard(workout_id: int) -> InlineKeyboardMarkup:
+    """
+    Клавиатура для уведомления о тренировке.
+    """
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text="💪 Начать тренировку!", callback_data=f"get_workout_now_{workout_id}"
+            )
+        ],
+        [
+            InlineKeyboardButton(text="Пропустить", callback_data=f"workout_skipped_{workout_id}")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)

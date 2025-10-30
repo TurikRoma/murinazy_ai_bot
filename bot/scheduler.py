@@ -4,6 +4,7 @@ from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from datetime import datetime
 
 from bot.keyboards.workout import get_start_workout_keyboard
 from bot.requests.workout_requests import (
@@ -12,6 +13,8 @@ from bot.requests.workout_requests import (
     update_workout_status,
 )
 from database.models import WorkoutStatusEnum
+from bot.requests import subscription_requests
+from bot.keyboards.workout import get_notification_keyboard
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 logger = logging.getLogger(__name__)
@@ -83,3 +86,39 @@ async def restore_scheduled_jobs(bot: Bot, session_pool: async_sessionmaker):
                 f"Запланировано уведомление для тренировки #{workout.id} "
                 f"пользователя {workout.user.telegram_id} на {workout.planned_date}"
             )
+
+
+async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker):
+    """
+    Проверяет и обрабатывает истекшие платные и триальные подписки.
+    """
+    logging.info("Running scheduled job: check_expired_subscriptions")
+    async with session_pool() as session:
+        # 1. Обработка истекших платных подписок
+        expired_paid = await subscription_requests.get_expired_paid_subscriptions(session)
+        for sub in expired_paid:
+            logging.info(f"Subscription for user {sub.user_id} has expired. Updating status to 'expired'.")
+            await subscription_requests.update_subscription_status(session, sub.id, "expired")
+            try:
+                await bot.send_message(
+                    chat_id=sub.user.telegram_id,
+                    text="ℹ️ Ваша подписка истекла. Чтобы продолжать получать тренировки, пожалуйста, оформите новую."
+                    # TODO: Добавить кнопку оплаты
+                )
+            except Exception as e:
+                logging.error(f"Failed to send expiration notification to user {sub.user_id}: {e}")
+
+        # 2. Обработка триальных подписок, у которых закончились тренировки
+        exhausted_trials = await subscription_requests.get_exhausted_trial_subscriptions(session)
+        for sub in exhausted_trials:
+            logging.info(f"Trial for user {sub.user_id} has expired. Updating status to 'trial_expired'.")
+            await subscription_requests.update_subscription_status(session, sub.id, "trial_expired")
+            try:
+                # Отправляем уведомление только один раз при смене статуса
+                await bot.send_message(
+                    chat_id=sub.user.telegram_id,
+                    text="👋 Ваш пробный период завершен. Чтобы получить план на новую неделю, оформите подписку.",
+                    # TODO: Добавить кнопку оплаты
+                )
+            except Exception as e:
+                logging.error(f"Failed to send trial expiration notification to user {sub.user_id}: {e}")

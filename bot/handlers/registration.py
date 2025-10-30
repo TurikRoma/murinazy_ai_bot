@@ -25,7 +25,7 @@ from bot.keyboards.registration import (
     get_profile_reply_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
-from bot.requests import user_requests
+from bot.requests import user_requests, subscription_requests
 from bot.requests.schedule_requests import create_or_update_user_schedule
 from bot.requests.user_requests import get_user_by_telegram_id
 from bot.services.workout_service import WorkoutService
@@ -383,6 +383,10 @@ async def confirm_registration(
             user_data=registration_schema,
             telegram_id=query.from_user.id,
         )
+
+        # Для нового пользователя создаем триальную подписку
+        if is_new_user and user:
+            await subscription_requests.create_subscription(session, user.id)
 
         # Сохраняем расписание, если оно было настроено
         workout_schedule = user_data_dict.get("workout_schedule")

@@ -8,9 +8,11 @@ from sqlalchemy import (
     Enum,
     Float,
     Time,
+    func,
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
+from typing import List
+from datetime import datetime, time
 import enum
 
 
@@ -18,10 +20,10 @@ Base = declarative_base()
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime.datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), onupdate=func.now(), server_default=func.now()
     )
 
@@ -95,8 +97,16 @@ class User(Base, TimestampMixin):
     )
     score: Mapped[int] = mapped_column(Integer, default=0, nullable=False, server_default="0")
 
-    workouts: Mapped[list["Workout"]] = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
-    workout_schedules: Mapped[list["WorkoutSchedule"]] = relationship("WorkoutSchedule", back_populates="user", cascade="all, delete-orphan")
+    workouts: Mapped[List["Workout"]] = relationship(
+        "Workout", back_populates="user", cascade="all, delete-orphan"
+    )
+    workout_schedules: Mapped[List["WorkoutSchedule"]] = relationship(
+        "WorkoutSchedule", back_populates="user", cascade="all, delete-orphan"
+    )
+    subscription: Mapped["Subscription"] = relationship(
+        "Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+
 
 class Exercise(Base):
     __tablename__ = "exercises"
@@ -122,7 +132,7 @@ class Workout(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    planned_date: Mapped[datetime.datetime] = mapped_column(
+    planned_date: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), server_default=func.now()
     )
     status: Mapped[WorkoutStatusEnum] = mapped_column(
@@ -161,7 +171,26 @@ class WorkoutSchedule(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     day: Mapped[WorkoutScheduleDayEnum] = mapped_column(Enum(WorkoutScheduleDayEnum), nullable=False)
-    notification_time: Mapped[datetime.time] = mapped_column(Time, nullable=False)
+    notification_time: Mapped[time] = mapped_column(Time, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="workout_schedules")
-    
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    status: Mapped[str] = mapped_column(
+        String, default="trial"
+    )  # Enum: trial, trial_expired, active, expired
+    trial_workouts_used: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="subscription") 

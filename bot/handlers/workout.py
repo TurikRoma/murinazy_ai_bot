@@ -17,11 +17,14 @@ from bot.services.llm_service import llm_service
 from database.models import Workout, WorkoutStatusEnum
 from bot.scheduler import scheduler
 from bot.states.workout import WorkoutState
+from bot.services.subscription_service import subscription_service
+from bot.requests import subscription_requests
 
 from bot.keyboards.workout import (
     get_start_workout_keyboard,
     get_exercise_navigation_keyboard,
 )
+from bot.keyboards.payment import get_payment_keyboard
 
 router = Router()
 
@@ -132,6 +135,17 @@ async def get_workout_handler_callback(query: CallbackQuery, session: AsyncSessi
         )
         return
 
+    # Проверка подписки
+    can_get_workout = await subscription_service.can_receive_workout(session, user)
+    if not can_get_workout:
+        await query.message.answer(
+            "🔥 Ваш пробный период завершен или подписка истекла.\n\n"
+            "Чтобы продолжать тренировки, пожалуйста, оформите подписку.",
+            reply_markup=get_payment_keyboard()
+        )
+        await query.answer()
+        return
+
     workout = await get_next_workout_for_user(session, user.id)
 
     if workout:
@@ -146,7 +160,14 @@ async def get_workout_handler_callback(query: CallbackQuery, session: AsyncSessi
                 parse_mode="HTML",
             )
             await query.message.edit_reply_markup(reply_markup=None)
-            scheduler.remove_job(f"workout_{workout.id}")
+            
+            # Фиксируем отправку тренировки для триала
+            await subscription_service.record_workout_sent(session, user)
+
+            try:
+                scheduler.remove_job(f"workout_{workout.id}")
+            except Exception as e:
+                logging.warning(f"Could not remove job workout_{workout.id}. Maybe it was already triggered. Error: {e}")
         else:
             await query.message.answer("Не удалось загрузить детали тренировки.")
     else:
@@ -162,6 +183,22 @@ async def get_workout_now_handler(query: CallbackQuery, session: AsyncSession):
     """
     Обработчик кнопки "Получить тренировку сейчас".
     """
+    user = await get_user_by_telegram_id(session, query.from_user.id)
+    if not user:
+        await query.answer("Не удалось найти ваш профиль. Пожалуйста, перезапустите бота /start.", show_alert=True)
+        return
+
+    # Проверка подписки
+    can_get_workout = await subscription_service.can_receive_workout(session, user)
+    if not can_get_workout:
+        await query.message.answer(
+            "🔥 Ваш пробный период завершен или подписка истекла.\n\n"
+            "Чтобы продолжать тренировки, пожалуйста, оформите подписку.",
+            reply_markup=get_payment_keyboard()
+        )
+        await query.answer()
+        return
+        
     workout_id = int(query.data.split("_")[-1])
     workout = await get_workout_with_exercises(session, workout_id)
 
@@ -172,7 +209,13 @@ async def get_workout_now_handler(query: CallbackQuery, session: AsyncSession):
             reply_markup=get_start_workout_keyboard(workout.id),
             parse_mode="HTML",
         )
-        scheduler.remove_job(f"workout_{workout_id}")
+        # Фиксируем отправку тренировки для триала
+        await subscription_service.record_workout_sent(session, user)
+
+        try:
+            scheduler.remove_job(f"workout_{workout_id}")
+        except Exception as e:
+            logging.warning(f"Could not remove job workout_{workout_id}. Maybe it was already triggered. Error: {e}")
     else:
         await query.message.answer(
             "Не удалось найти эту тренировку. Возможно, она была удалена."
@@ -256,33 +299,46 @@ async def finish_workout_handler(
         if user:
             await add_score_to_user(session, user.id, points=1)
 
-            congrats_message = (
-                "Красава! Ты полностью выполнил тренировку и заработал +1 очко. 🏆\n\n"
-                "Загляни в профиль, чтобы узнать, сколько очков осталось до нового звания!\n\n"
-            )
+            # Проверяем, может ли пользователь получить ЕЩЕ ОДНУ тренировку
+            # Эта проверка происходит ПОСЛЕ начисления очков, но ДО отправки сообщения
+            can_get_next = await subscription_service.can_receive_workout(session, user)
+            subscription = await subscription_requests.get_subscription_by_user_id(session, user.id)
 
-            next_workout = await get_next_workout_for_user(session, user.id)
-            if next_workout:
-                days_ru = {
-                    0: "понедельник", 1: "вторник", 2: "среду", 3: "четверг",
-                    4: "пятницу", 5: "субботу", 6: "воскресенье"
-                }
-                day_of_week = days_ru.get(next_workout.planned_date.weekday(), "")
-                date_str = next_workout.planned_date.strftime('%d.%m.%Y')
-                message_text = (
-                    f"Следующее испытание ждет тебя в <b>{day_of_week}</b>, "
-                    f"<b>{date_str}</b>. Не пропусти!"
-                )
+            # Если это была последняя доступная триальная тренировка
+            if not can_get_next and subscription and subscription.status == 'trial':
                 await query.message.answer(
-                    congrats_message + message_text, parse_mode="HTML"
+                    "🏆 Отличная работа! Ваш пробный период завершен.\n\n"
+                    "Чтобы разблокировать полный доступ и получить план на следующую неделю, оформите подписку.",
+                    reply_markup=get_payment_keyboard()
                 )
             else:
-                await query.message.answer(
-                    congrats_message
-                    + "Отличная работа! Это была последняя запланированная на неделе тренировка. "
-                    "Скоро я подготовлю для тебя новый план.",
-                    parse_mode="HTML",
+                congrats_message = (
+                    "Красава! Ты полностью выполнил тренировку и заработал +1 очко. 🏆\n\n"
+                    "Загляни в профиль, чтобы узнать, сколько очков осталось до нового звания!\n\n"
                 )
+
+                next_workout = await get_next_workout_for_user(session, user.id)
+                if next_workout:
+                    days_ru = {
+                        0: "понедельник", 1: "вторник", 2: "среду", 3: "четверг",
+                        4: "пятницу", 5: "субботу", 6: "воскресенье"
+                    }
+                    day_of_week = days_ru.get(next_workout.planned_date.weekday(), "")
+                    date_str = next_workout.planned_date.strftime('%d.%m.%Y')
+                    message_text = (
+                        f"Следующее испытание ждет тебя в <b>{day_of_week}</b>, "
+                        f"<b>{date_str}</b>. Не пропусти!"
+                    )
+                    await query.message.answer(
+                        congrats_message + message_text, parse_mode="HTML"
+                    )
+                else:
+                    await query.message.answer(
+                        congrats_message
+                        + "Отличная работа! Это была последняя запланированная на неделе тренировка. "
+                        "Скоро я подготовлю для тебя новый план.",
+                        parse_mode="HTML",
+                    )
     else:
         # Досрочное завершение
         await update_workout_status(session, workout_id, WorkoutStatusEnum.skipped)
