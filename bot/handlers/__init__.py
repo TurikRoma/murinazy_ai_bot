@@ -6,6 +6,7 @@ from . import (
     workout,
     admin,
     payment,
+    playlists,
 )
 
 # Порядок роутеров важен
@@ -15,6 +16,7 @@ routers = [
     registration.router,
     profile.router,
     payment.router,
+    playlists.router,
     workout.router,
 ]
 
@@ -26,4 +28,5 @@ main_router.include_router(start.router)
 main_router.include_router(registration.router)
 main_router.include_router(profile.router)
 main_router.include_router(payment.router)
+main_router.include_router(playlists.router)
 main_router.include_router(workout.router)

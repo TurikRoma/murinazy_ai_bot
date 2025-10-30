@@ -144,8 +144,9 @@ def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
     builder.row(
         KeyboardButton(text="👤 Профиль"),
-        KeyboardButton(text="💳 Приобрести подписку")
+        KeyboardButton(text="🎵 Плейлисты")
     )
+    builder.row(KeyboardButton(text="💳 Приобрести подписку"))
     return builder.as_markup(resize_keyboard=True, persistent=True)
 
 
