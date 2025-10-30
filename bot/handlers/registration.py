@@ -369,6 +369,7 @@ async def confirm_registration(
     Подтверждение регистрации, сохранение пользователя и запуск генерации плана.
     Для существующих пользователей только обновляет данные без генерации плана.
     """
+    loading_message = None
     try:
         user_data_dict = await state.get_data()
         registration_schema = UserRegistrationSchema(**user_data_dict)
@@ -476,14 +477,16 @@ async def confirm_registration(
                     "Новый план будет создан в начале следующей недели."
                 )
 
-            await loading_message.edit_text(
+            await loading_message.delete()
+            await query.message.answer(
                 final_text,
                 reply_markup=get_post_registration_keyboard(),
                 parse_mode="HTML"
             )
         else:
             # Если workout_service вернул None
-            await loading_message.edit_text(
+            await loading_message.delete()
+            await query.message.answer(
                 "❌ Не удалось создать план тренировок. "
                 "Пожалуйста, попробуйте позже или свяжитесь с поддержкой.",
                 reply_markup=get_post_registration_keyboard(),
@@ -491,18 +494,14 @@ async def confirm_registration(
 
     except Exception as e:
         logging.exception("Error during registration confirmation")
-        try:
-            await query.message.edit_text(
-                "❌ Произошла непредвиденная ошибка при создании вашего плана. "
-                "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
-                "Если проблема повторится, свяжитесь с поддержкой."
-            )
-        except:
-            await query.message.answer(
-                "❌ Произошла непредвиденная ошибка при создании вашего плана. "
-                "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
-                "Если проблема повторится, свяжитесь с поддержкой."
-            )
+        if loading_message:
+            await loading_message.delete()
+            
+        await query.message.answer(
+            "❌ Произошла непредвиденная ошибка при создании вашего плана. "
+            "Пожалуйста, попробуйте пройти регистрацию заново через команду /start. "
+            "Если проблема повторится, свяжитесь с поддержкой."
+        )
 
     finally:
         await query.answer()

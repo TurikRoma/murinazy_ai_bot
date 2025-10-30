@@ -11,11 +11,9 @@ class PlanSummary(BaseModel):
 class ExercisePlan(BaseModel):
     order: int
     exercise_name: str
-    muscle_groups: str
     sets: int
     reps: int | str
-    rest_seconds: int
-    notes: str
+
 
 
 class WorkoutDayPlan(BaseModel):

@@ -66,12 +66,29 @@ class WorkoutService:
                     fixed_exercises = await get_exercises_from_last_workouts(
                         session, user.id, user.workout_frequency or 1
                     )
+                    
+                    # ПРОВЕРКА: Если пользователь сменил оборудование, старый план невалиден
+                    settings_are_valid = True
                     if not fixed_exercises:
-                        logging.error(
-                            f"Не найдены упражнения для пользователя {user.id} в середине цикла. "
-                            f"Попытка сгенерировать заново."
+                        settings_are_valid = False
+                        logging.warning(f"No fixed exercises found for user {user.id} mid-cycle. Forcing regeneration.")
+                    elif fixed_exercises[0].equipment_type != user.equipment_type:
+                        settings_are_valid = False
+                        logging.warning(f"User {user.id} changed equipment from {fixed_exercises[0].equipment_type.value} to {user.equipment_type.value}. Forcing regeneration.")
+
+                    if settings_are_valid:
+                         plan = await llm_service.generate_workout_plan(
+                            user=user,
+                            effective_training_week=effective_week,
+                            fixed_exercises=fixed_exercises
                         )
-                        # Откатываемся к логике 1-й недели, если что-то пошло не так
+                    else:
+                        # Запускаем логику первой недели, так как настройки изменились
+                        logging.info(f"Regenerating plan for user {user.id} due to settings change.")
+                        # Обнуляем неделю, чтобы начать новый цикл
+                        await user_requests.increment_user_training_week(session, user.id, week_to_set=1)
+                        effective_week = 1 # Устанавливаем для LLM первую неделю
+                        
                         all_exercises = await exercise_requests.get_exercises_by_equipment(
                             session, user.equipment_type
                         )
@@ -79,12 +96,6 @@ class WorkoutService:
                             user=user,
                             effective_training_week=effective_week,
                             available_exercises=all_exercises
-                        )
-                    else:
-                        plan = await llm_service.generate_workout_plan(
-                            user=user,
-                            effective_training_week=effective_week,
-                            fixed_exercises=fixed_exercises
                         )
 
                 logging.info(f"LLM generated plan for user {user.telegram_id}: {plan.model_dump_json(indent=2)}")

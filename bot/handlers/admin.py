@@ -33,23 +33,29 @@ async def generate_workout_command(
         )
         return
 
+    # Получаем аргументы команды
+    args = message.text.split()
+    force_generate = len(args) > 1 and args[1].lower() == "true"
+
     # Проверяем подписку админа перед генерацией
     admin_user = await get_user_by_telegram_id(session, message.from_user.id)
     if not admin_user or not await subscription_service.can_receive_workout(session, admin_user):
         logging.info(f"Admin {message.from_user.id} has no active subscription. Skipping /generate.")
         return
 
-    # Проверяем, есть ли уже запланированные тренировки
-    next_workout = await get_next_workout_for_user(session, admin_user.id)
-    if next_workout:
-        await message.answer(
-            "У вас уже есть запланированные тренировки на этой неделе. "
-            f"Следующая тренировка: {next_workout.planned_date.strftime('%d.%m.%Y')}."
-        )
-        return
+    # Проверяем, есть ли уже запланированные тренировки (если не принудительно)
+    if not force_generate:
+        next_workout = await get_next_workout_for_user(session, admin_user.id)
+        if next_workout:
+            await message.answer(
+                "У вас уже есть запланированные тренировки на этой неделе. "
+                f"Следующая тренировка: {next_workout.planned_date.strftime('%d.%m.%Y')}.\n\n"
+                "Чтобы сгенерировать план на следующую неделю, используйте `/generate true`."
+            )
+            return
 
     loading_message = await message.answer(
-        "⏳ Начинаю принудительную генерацию недельного плана для вашего аккаунта..."
+        "⏳ Начинаю генерацию недельного плана для вашего аккаунта..."
     )
 
     try:
