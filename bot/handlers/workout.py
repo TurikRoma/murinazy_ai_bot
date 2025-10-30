@@ -19,6 +19,8 @@ from bot.scheduler import scheduler
 from bot.states.workout import WorkoutState
 from bot.services.subscription_service import subscription_service
 from bot.requests import subscription_requests
+from database.models import User
+from bot.utils.profile_helpers import get_training_week_description
 
 from bot.keyboards.workout import (
     get_start_workout_keyboard,
@@ -27,6 +29,41 @@ from bot.keyboards.workout import (
 from bot.keyboards.payment import get_payment_keyboard
 
 router = Router()
+
+
+async def _check_and_notify_for_subscription(
+    query: CallbackQuery, session: AsyncSession, user: User
+) -> bool:
+    """
+    Проверяет, может ли пользователь получить следующую тренировку.
+    Если нет, отправляет уведомление о необходимости продлить подписку.
+    Возвращает True, если уведомление было отправлено, иначе False.
+    """
+    can_get_next = await subscription_service.can_receive_workout(session, user)
+    if not can_get_next:
+        subscription = await subscription_requests.get_subscription_by_user_id(
+            session, user.id
+        )
+        
+        message_text = (
+            "🔥 Ваша подписка закончилась, и это была последняя доступная тренировка.\n\n"
+            "Чтобы продолжать тренировки и получить новый план, "
+            "пожалуйста, оформите подписку."
+        )
+
+        if subscription and subscription.status == "trial":
+            message_text = (
+                "🏆 Ваш пробный период завершен.\n\n"
+                "Чтобы разблокировать полный доступ и получить доступ к следующим тренировкам, "
+                "оформите подписку."
+            )
+            # Меняем статус, чтобы не отправлять это сообщение повторно
+            await subscription_service.expire_trial_subscription(session, user.id)
+
+        await query.message.answer(message_text, reply_markup=get_payment_keyboard())
+        return True
+
+    return False
 
 
 def format_workout_message(workout: Workout) -> str:
@@ -299,23 +336,21 @@ async def finish_workout_handler(
         if user:
             await add_score_to_user(session, user.id, points=1)
 
-            # Проверяем, может ли пользователь получить ЕЩЕ ОДНУ тренировку
-            # Эта проверка происходит ПОСЛЕ начисления очков, но ДО отправки сообщения
-            can_get_next = await subscription_service.can_receive_workout(session, user)
-            subscription = await subscription_requests.get_subscription_by_user_id(session, user.id)
-
-            # Если это была последняя доступная триальная тренировка
-            if not can_get_next and subscription and subscription.status == 'trial':
-                await query.message.answer(
-                    "🏆 Отличная работа! Ваш пробный период завершен.\n\n"
-                    "Чтобы разблокировать полный доступ и получить план на следующую неделю, оформите подписку.",
-                    reply_markup=get_payment_keyboard()
-                )
+            # Проверяем подписку и отправляем уведомление, если нужно
+            if await _check_and_notify_for_subscription(query, session, user):
+                pass  # Уведомление отправлено, ничего больше не делаем
             else:
                 congrats_message = (
                     "Красава! Ты полностью выполнил тренировку и заработал +1 очко. 🏆\n\n"
-                    "Загляни в профиль, чтобы узнать, сколько очков осталось до нового звания!\n\n"
                 )
+                
+                # Добавляем информацию о текущем цикле
+                training_week_info = get_training_week_description(user)
+                if training_week_info:
+                    congrats_message += (
+                        f"Ты сейчас на: <b>{training_week_info}</b>.\n"
+                        "Продолжай в том же духе!\n\n"
+                    )
 
                 next_workout = await get_next_workout_for_user(session, user.id)
                 if next_workout:
@@ -346,6 +381,11 @@ async def finish_workout_handler(
             f"Тренировка завершена досрочно. Выполнено упражнений: {current_index} из {total_exercises}.\n\n"
             "В следующий раз постарайся дойти до конца! 💪"
         )
+        
+        user = await get_user_by_telegram_id(session, query.from_user.id)
+        if user:
+            # Проверяем подписку и здесь, на случай если это была последняя треня
+            await _check_and_notify_for_subscription(query, session, user)
 
     await state.clear()
 
@@ -360,6 +400,10 @@ async def workout_skipped_handler(query: CallbackQuery, session: AsyncSession):
 
     user = await get_user_by_telegram_id(session, query.from_user.id)
     if user:
+        # Проверяем подписку и отправляем уведомление, если нужно
+        if await _check_and_notify_for_subscription(query, session, user):
+            return  # Уведомление отправлено, выходим
+
         next_workout = await get_next_workout_for_user(session, user.id)
         if next_workout:
             days_ru = {

@@ -3,6 +3,7 @@ from sqlalchemy.future import select
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import selectinload
+from sqlalchemy import update
 
 from database.models import Subscription, User
 
@@ -67,6 +68,24 @@ async def activate_paid_subscription(
     return subscription
 
 
+async def extend_subscription(
+    session: AsyncSession, user_id: int, new_expires_at: datetime
+) -> Subscription | None:
+    """Продлевает существующую подписку."""
+    stmt = (
+        update(Subscription)
+        .where(Subscription.user_id == user_id)
+        .values(expires_at=new_expires_at, status="active")
+        .returning(Subscription)
+    )
+    result = await session.execute(stmt)
+    subscription = result.scalar_one_or_none()
+    if subscription:
+        await session.commit()
+        await session.refresh(subscription)
+    return subscription
+
+
 async def get_expired_paid_subscriptions(session: AsyncSession) -> list[Subscription]:
     """Находит все активные подписки, срок действия которых уже истек."""
     result = await session.execute(
@@ -85,7 +104,6 @@ async def get_exhausted_trial_subscriptions(session: AsyncSession) -> list[Subsc
     Находит все триальные подписки, у которых количество использованных
     тренировок равно или больше запланированного.
     """
-    # Этот запрос немного сложнее, так как требует JOIN с User
     stmt = (
         select(Subscription)
         .options(selectinload(Subscription.user))

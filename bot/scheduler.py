@@ -15,6 +15,7 @@ from bot.requests.workout_requests import (
 from database.models import WorkoutStatusEnum
 from bot.requests import subscription_requests
 from bot.keyboards.workout import get_notification_keyboard
+from bot.keyboards.payment import get_payment_keyboard
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 logger = logging.getLogger(__name__)
@@ -102,8 +103,8 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
             try:
                 await bot.send_message(
                     chat_id=sub.user.telegram_id,
-                    text="ℹ️ Ваша подписка истекла. Чтобы продолжать получать тренировки, пожалуйста, оформите новую."
-                    # TODO: Добавить кнопку оплаты
+                    text="ℹ️ Ваша подписка истекла. Чтобы продолжать получать тренировки, пожалуйста, оформите новую.",
+                    reply_markup=get_payment_keyboard()
                 )
             except Exception as e:
                 logging.error(f"Failed to send expiration notification to user {sub.user_id}: {e}")
@@ -112,13 +113,13 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
         exhausted_trials = await subscription_requests.get_exhausted_trial_subscriptions(session)
         for sub in exhausted_trials:
             logging.info(f"Trial for user {sub.user_id} has expired. Updating status to 'trial_expired'.")
+            # Меняем статус, чтобы уведомление не отправлялось повторно
             await subscription_requests.update_subscription_status(session, sub.id, "trial_expired")
             try:
-                # Отправляем уведомление только один раз при смене статуса
                 await bot.send_message(
                     chat_id=sub.user.telegram_id,
                     text="👋 Ваш пробный период завершен. Чтобы получить план на новую неделю, оформите подписку.",
-                    # TODO: Добавить кнопку оплаты
+                    reply_markup=get_payment_keyboard()
                 )
             except Exception as e:
                 logging.error(f"Failed to send trial expiration notification to user {sub.user_id}: {e}")

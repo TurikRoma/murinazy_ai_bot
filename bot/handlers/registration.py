@@ -22,7 +22,7 @@ from bot.keyboards.registration import (
     get_workout_schedule_keyboard,
     get_workout_schedule_day_keyboard,
     get_trainer_style_keyboard,
-    get_profile_reply_keyboard,
+    get_main_menu_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
 from bot.requests import user_requests, subscription_requests
@@ -412,7 +412,7 @@ async def confirm_registration(
             await query.message.answer(
                 update_message,
                 parse_mode="HTML",
-                reply_markup=get_profile_reply_keyboard()
+                reply_markup=get_main_menu_keyboard()
             )
             return
 
@@ -429,7 +429,7 @@ async def confirm_registration(
         await query.message.answer(
             thanks_message,
             parse_mode="HTML",
-            reply_markup=get_profile_reply_keyboard()
+            reply_markup=get_main_menu_keyboard()
         )
 
         # Небольшая пауза перед генерацией плана

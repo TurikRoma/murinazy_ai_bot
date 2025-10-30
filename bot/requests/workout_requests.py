@@ -57,10 +57,17 @@ async def get_latest_planned_date(session: AsyncSession, user_id: int) -> date |
 async def get_next_workout_for_user(
     session: AsyncSession, user_id: int
 ) -> Workout | None:
-    """Получает следующую по дате планирования тренировку пользователя."""
+    """
+    Возвращает ближайшую запланированную тренировку для пользователя.
+    Ищет тренировки со статусом 'planned'.
+    """
     stmt = (
         select(Workout)
-        .where(Workout.user_id == user_id, Workout.planned_date > datetime.datetime.now(), Workout.status == WorkoutStatusEnum.planned)
+        .where(
+            Workout.user_id == user_id,
+            Workout.status == WorkoutStatusEnum.planned,
+            Workout.planned_date >= datetime.datetime.utcnow(),
+        )
         .order_by(Workout.planned_date.asc())
         .limit(1)
     )
@@ -249,6 +256,39 @@ async def get_future_planned_workouts(session: AsyncSession) -> Sequence[Workout
     )
     result = await session.execute(stmt)
     return result.scalars().all()
+
+
+async def get_workouts_for_period(
+    session: AsyncSession, user_id: int, start_date: date, end_date: date
+) -> list[Workout]:
+    """
+    Получает все тренировки пользователя за указанный период.
+    """
+    stmt = (
+        select(Workout)
+        .where(
+            Workout.user_id == user_id,
+            Workout.planned_date >= start_date,
+            Workout.planned_date <= end_date,
+        )
+        .order_by(Workout.planned_date)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def get_latest_workout_for_user(
+    session: AsyncSession, user_id: int
+) -> Workout | None:
+    """Возвращает последнюю тренировку пользователя по дате."""
+    stmt = (
+        select(Workout)
+        .where(Workout.user_id == user_id)
+        .order_by(Workout.planned_date.desc())
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalars().first()
 
 
 async def update_workout_status(

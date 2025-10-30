@@ -4,10 +4,19 @@ from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.handlers.start import start_registration_process
-from bot.keyboards.registration import get_profile_reply_keyboard, get_profile_inline_keyboard
+from bot.keyboards.registration import get_main_menu_keyboard, get_profile_inline_keyboard
 from bot.requests.user_requests import get_user_by_telegram_id
 from bot.requests.schedule_requests import get_user_schedule
 from bot.utils.rank_utils import get_rank_by_score, get_next_rank_threshold
+from bot.utils.profile_helpers import get_training_week_description
+from bot.keyboards.payment import get_payment_keyboard
+from bot.keyboards.subscription import get_extend_subscription_keyboard
+from bot.requests import subscription_requests
+from datetime import datetime, timedelta
+import logging
+from aiogram.types import LabeledPrice
+from database.models import User, Subscription, WorkoutSchedule
+from typing import List
 
 router = Router()
 
@@ -55,28 +64,30 @@ DAYS_SHORT_TO_FULL = {
 DAYS_FULL_TO_SHORT = {v: k for k, v in DAYS_SHORT_TO_FULL.items()}
 
 
-def format_user_profile(user) -> str:
+def format_full_profile_text(
+    user: User, schedule_list: List[WorkoutSchedule], subscription: Subscription | None
+) -> str:
     """
-    Форматирует данные пользователя для красивого отображения в профиле.
+    Форматирует данные пользователя, расписание и подписку для отображения в профиле.
     """
     profile_text = "<b>👤 Ваш профиль</b>\n\n"
-    
-    # Отображаем очки и звание в самом верху, красиво оформленные
+
+    # 1. Очки и звание
     user_score = user.score or 0
     user_rank = get_rank_by_score(user_score)
     next_rank_info = get_next_rank_threshold(user_score)
-    
+
     profile_text += f"🏆 <b>Звание:</b> {user_rank}\n"
     profile_text += f"⭐ <b>Очки:</b> {user_score}"
-    
+
     if next_rank_info:
         next_threshold, next_rank = next_rank_info
         points_to_next = next_threshold - user_score
         profile_text += f" (до <b>{next_rank}</b> осталось {points_to_next} очков)"
-    
+
     profile_text += "\n" + "─" * 20 + "\n\n"
-    
-    # Определяем порядок ключей для красивого вывода
+
+    # 2. Основные данные
     fields = [
         ("gender", user.gender),
         ("age", user.age),
@@ -89,52 +100,66 @@ def format_user_profile(user) -> str:
         ("equipment_type", user.equipment_type),
         ("trainer_style", user.trainer_style),
     ]
-    
+
     for field_name, value in fields:
         if value is None:
             continue
-        
+
         display_name = HUMAN_READABLE_NAMES.get(field_name, field_name)
-        
-        # Преобразуем значение для отображения
-        if hasattr(value, 'value'):  # Enum
+
+        if hasattr(value, "value"):  # Enum
             display_value = HUMAN_READABLE_NAMES.get(value.value, str(value.value))
         else:
             display_value = str(value)
-            # Для workout_frequency добавляем текст
             if field_name == "workout_frequency":
                 display_value = f"{value} раз(а) в неделю"
-            # Для веса и роста добавляем единицы измерения
             elif field_name in ["current_weight", "target_weight"]:
                 display_value = f"{value} кг"
             elif field_name == "height":
                 display_value = f"{value} см"
-        
+
         profile_text += f"<b>{display_name}</b>: {display_value}\n"
-    
-    return profile_text
 
-
-async def format_user_profile_with_schedule(
-    user, schedule_list
-) -> str:
-    """
-    Форматирует данные пользователя с расписанием тренировок.
-    """
-    profile_text = format_user_profile(user)
-    
-    # Добавляем расписание, если оно есть
+    # 3. Расписание
     if schedule_list:
         schedule_items = []
         for schedule in schedule_list:
-            day_short = DAYS_FULL_TO_SHORT.get(schedule.day.value, schedule.day.value)
-            time_str = schedule.notification_time.strftime('%H:%M')
+            day_short = DAYS_FULL_TO_SHORT.get(
+                schedule.day.value, schedule.day.value
+            )
+            time_str = schedule.notification_time.strftime("%H:%M")
             schedule_items.append(f"{day_short} в {time_str}")
         schedule_str = ", ".join(schedule_items)
-        profile_text += f"\n<b>Расписание</b>: {schedule_str}"
+        profile_text += f"<b>Расписание</b>: {schedule_str}\n"
     else:
-        profile_text += "\n<b>Расписание</b>: Не настроено (уведомления каждые 24 часа)"
+        profile_text += "<b>Расписание</b>: Не настроено (уведомления каждые 24 часа)\n"
     
+    profile_text += "\n" + "─" * 20 + "\n"
+
+    # 4. Подписка и прогресс
+    profile_text += "\n<b>📈 Подписка и прогресс</b>\n"
+    
+    training_week_info = get_training_week_description(user)
+    if training_week_info:
+        profile_text += f"<b>Текущий цикл:</b> {training_week_info}\n"
+
+    if subscription:
+        if subscription.status == "trial":
+            # Лимит триала = 3 тренировки
+            remaining_workouts = 3 - (subscription.workouts_sent or 0)
+            profile_text += (
+                f"<b>Статус:</b> Пробный период "
+                f"({max(0, remaining_workouts)} бесплатных тренировок осталось)\n"
+            )
+        elif subscription.status == "active":
+            expires_str = subscription.expires_at.strftime("%d.%m.%Y")
+            profile_text += f"<b>Статус:</b> Активна до {expires_str}\n"
+        else:
+             profile_text += f"<b>Статус:</b> Неактивна\n"
+    else:
+        profile_text += "<b>Статус:</b> Нет подписки\n"
+
+
     return profile_text
 
 
@@ -148,16 +173,19 @@ async def show_profile(message: Message, session: AsyncSession):
     if not user:
         await message.answer(
             "❌ Вы еще не зарегистрированы. Используйте /start для регистрации.",
-            reply_markup=get_profile_reply_keyboard()
+            reply_markup=get_main_menu_keyboard()
         )
         return
-    
-    # Получаем расписание пользователя
+
+    # Получаем расписание и подписку
     schedule_list = await get_user_schedule(session, user.id)
-    
+    subscription = await subscription_requests.get_subscription_by_user_id(
+        session, user.id
+    )
+
     # Форматируем профиль
-    profile_text = await format_user_profile_with_schedule(user, schedule_list)
-    
+    profile_text = format_full_profile_text(user, schedule_list, subscription)
+
     await message.answer(
         profile_text,
         reply_markup=get_profile_inline_keyboard(),
@@ -173,3 +201,55 @@ async def edit_profile_callback(query: CallbackQuery, state: FSMContext):
     """
     # Используем функцию из start.py для начала процесса
     await start_registration_process(query, state)
+
+
+@router.message(F.text == "💳 Приобрести подписку")
+async def acquire_subscription_handler(message: Message, session: AsyncSession):
+    """Обрабатывает нажатие кнопки 'Приобрести подписку'."""
+    user = await get_user_by_telegram_id(session, message.from_user.id)
+    if not user:
+        await message.answer("Не удалось найти ваш профиль. Пожалуйста, перезапустите бота /start.", show_alert=True)
+        return
+
+    subscription = await subscription_requests.get_subscription_by_user_id(session, user.id)
+
+    if subscription and subscription.status == "active" and subscription.expires_at > datetime.now():
+        await message.answer(
+            "У вас уже есть активная подписка. Вы уверены, что хотите ее продлить?",
+            reply_markup=get_extend_subscription_keyboard()
+        )
+    else:
+        await message.answer(
+            "Выберите удобный для вас тариф:",
+            reply_markup=get_payment_keyboard()
+        )
+
+
+@router.callback_query(F.data == "confirm_extend_subscription")
+async def confirm_extend_subscription_handler(query: CallbackQuery, session: AsyncSession):
+    """Отправляет инвойс на оплату для продления подписки."""
+    try:
+        await query.bot.send_invoice(
+            chat_id=query.from_user.id,
+            title="Продление подписки",
+            description="Продление доступа ко всем функциям на 1 месяц.",
+            payload="monthly_subscription", # Такой же payload, чтобы обработчик сработал
+            currency="XTR",
+            prices=[LabeledPrice(label="Продление подписки на 1 месяц", amount=1)],
+            start_parameter="one-month-subscription-extend",
+        )
+        await query.message.delete() # Удаляем сообщение с кнопками "Да/Нет"
+    except Exception as e:
+        logging.error(f"Failed to send extend invoice to user {query.from_user.id}: {e}", exc_info=True)
+        await query.message.edit_text(
+            "❌ Произошла ошибка при создании счета. Пожалуйста, попробуйте еще раз."
+        )
+    finally:
+        await query.answer()
+
+
+@router.callback_query(F.data == "cancel_extend_subscription")
+async def cancel_extend_subscription_handler(query: CallbackQuery):
+    """Отменяет продление подписки."""
+    await query.message.edit_text("Продление подписки отменено.")
+    await query.answer()

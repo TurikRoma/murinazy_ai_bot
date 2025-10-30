@@ -10,6 +10,8 @@ from bot.requests.user_requests import get_user_by_telegram_id
 from bot.requests.workout_requests import get_next_workout_for_user, get_workout_with_exercises
 from bot.handlers.workout import format_workout_message, get_start_workout_keyboard
 from bot.services.subscription_service import subscription_service
+from datetime import datetime, timedelta
+from database.models import WorkoutStatusEnum
 
 
 router = Router()
@@ -28,6 +30,21 @@ async def generate_workout_command(
     if message.from_user.id != settings.ADMIN_ID:
         logging.warning(
             f"Non-admin user {message.from_user.id} tried to use /generate"
+        )
+        return
+
+    # Проверяем подписку админа перед генерацией
+    admin_user = await get_user_by_telegram_id(session, message.from_user.id)
+    if not admin_user or not await subscription_service.can_receive_workout(session, admin_user):
+        logging.info(f"Admin {message.from_user.id} has no active subscription. Skipping /generate.")
+        return
+
+    # Проверяем, есть ли уже запланированные тренировки
+    next_workout = await get_next_workout_for_user(session, admin_user.id)
+    if next_workout:
+        await message.answer(
+            "У вас уже есть запланированные тренировки на этой неделе. "
+            f"Следующая тренировка: {next_workout.planned_date.strftime('%d.%m.%Y')}."
         )
         return
 

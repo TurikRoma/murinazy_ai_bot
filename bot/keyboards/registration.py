@@ -139,11 +139,12 @@ def get_trainer_style_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_profile_reply_keyboard() -> ReplyKeyboardMarkup:
-    """Создает Reply клавиатуру с кнопкой профиля (постоянная внизу)."""
+def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
+    """Возвращает главную клавиатуру с кнопками 'Профиль' и 'Приобрести подписку'."""
     builder = ReplyKeyboardBuilder()
     builder.row(
         KeyboardButton(text="👤 Профиль"),
+        KeyboardButton(text="💳 Приобрести подписку")
     )
     return builder.as_markup(resize_keyboard=True, persistent=True)
 
