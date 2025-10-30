@@ -8,6 +8,7 @@ from sqlalchemy import (
     Enum,
     Float,
     Time,
+    Text,
     func,
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
@@ -106,6 +107,19 @@ class User(Base, TimestampMixin):
     subscription: Mapped["Subscription"] = relationship(
         "Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    messages: Mapped[List["UserMessage"]] = relationship(
+        "UserMessage", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class UserMessage(Base, TimestampMixin):
+    __tablename__ = "user_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="messages")
 
 
 class Exercise(Base):

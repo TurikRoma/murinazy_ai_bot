@@ -1,9 +1,26 @@
 import json
 from openai import AsyncOpenAI
+from dataclasses import dataclass
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from bot.config.settings import settings
 from database.models import User, Exercise
 from bot.schemas.workout import LLMWorkoutPlan
+from bot.requests import subscription_requests, message_requests
+
+
+TRIAL_MESSAGE_LIMIT = 20
+SUBSCRIPTION_MESSAGE_LIMIT = 500
+
+
+@dataclass
+class MessageLimitStatus:
+    can_send: bool
+    remaining: int
+    limit: int
+    is_trial: bool
+
 
 # Промпт для генерации НЕДЕЛЬНОЙ программы тренировок
 AI_COACH_PROMPT = """
@@ -189,6 +206,32 @@ class LLMService:
             api_key=settings.PROXY_API_KEY, base_url=settings.PROXY_API_URL
         )
 
+    async def get_message_limit_status(
+        self, session: AsyncSession, user_id: int
+    ) -> MessageLimitStatus:
+        """Проверяет лимит сообщений для пользователя."""
+        subscription = await subscription_requests.get_subscription_by_user_id(session, user_id)
+
+        if not subscription or subscription.status not in ["trial", "active"]:
+            return MessageLimitStatus(can_send=False, remaining=0, limit=0, is_trial=False)
+
+        if subscription.status == "trial":
+            limit = TRIAL_MESSAGE_LIMIT
+            messages_count = await message_requests.count_user_messages(session, user_id)
+            remaining = limit - messages_count
+            can_send = remaining > 0
+            return MessageLimitStatus(can_send, remaining, limit, is_trial=True)
+
+        if subscription.status == "active":
+            limit = SUBSCRIPTION_MESSAGE_LIMIT
+            # Считаем сообщения с момента последнего обновления подписки (начала платного периода)
+            messages_count = await message_requests.count_user_messages(
+                session, user_id, since=subscription.updated_at
+            )
+            remaining = limit - messages_count
+            can_send = remaining > 0
+            return MessageLimitStatus(can_send, remaining, limit, is_trial=False)
+
     async def generate_workout_plan(
         self,
         user: User,
@@ -267,6 +310,7 @@ class LLMService:
             }
             for ex in exercises
         ]
+
     async def generate_ai_coach_response(self, question: str) -> str:
         chat_completion = await self.client.chat.completions.create(
             model="gpt-4.1-mini",

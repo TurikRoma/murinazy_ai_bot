@@ -12,8 +12,9 @@ from bot.requests.workout_requests import (
     get_next_workout_for_user,
     get_workout_exercise_details,
 )
+from bot.requests import message_requests
 from bot.services.workout_service import WorkoutService
-from bot.services.llm_service import llm_service
+from bot.services.llm_service import llm_service, MessageLimitStatus
 from database.models import Workout, WorkoutStatusEnum
 from bot.scheduler import scheduler
 from bot.states.workout import WorkoutState
@@ -476,6 +477,42 @@ async def ai_coach_text_handler(message: Message, state: FSMContext, session: As
             "Пожалуйста, сначала пройдите регистрацию с помощью команды /start."
         )
         return
+
+    # Проверка лимита сообщений
+    limit_status = await llm_service.get_message_limit_status(session, user.id)
+
+    if not limit_status.can_send:
+        if limit_status.is_trial:
+            await message.answer(
+                "💬 Вы исчерпали лимит сообщений в пробном периоде.\n\n"
+                "Чтобы продолжить общение с тренером без ограничений, "
+                "пожалуйста, оформите подписку.",
+                reply_markup=get_payment_keyboard()
+            )
+        else:
+            await message.answer(
+                "💬 Вы достигли месячного лимита сообщений для общения с тренером.\n\n"
+                "Новый лимит будет доступен с началом следующего месяца вашей подписки."
+            )
+        return
+
+    # Сохраняем сообщение пользователя
+    await message_requests.add_message(session, user_id=user.id, message=message.text)
+
+    # Предупреждения для триального периода
+    if limit_status.is_trial:
+        if limit_status.remaining == 15:
+            await message.answer(
+                "<i>💡 У вас осталось 15 бесплатных сообщений тренеру.</i>",
+                parse_mode="HTML"
+            )
+        elif limit_status.remaining == 5:
+            await message.answer(
+                "<i>❗️ У вас осталось 5 бесплатных сообщений тренеру. "
+                "Чтобы снять лимиты, вы можете оформить подписку.</i>",
+                parse_mode="HTML",
+                reply_markup=get_payment_keyboard()
+            )
 
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
