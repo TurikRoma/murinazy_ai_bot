@@ -5,17 +5,18 @@ from datetime import date, datetime, timedelta, time
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from bot.requests import user_requests, exercise_requests, schedule_requests
+from bot.requests import user_requests, exercise_requests, schedule_requests, workout_requests
 from bot.requests.workout_requests import (
     save_weekly_plan,
     get_exercises_from_last_workouts,
     get_latest_planned_date,
     get_latest_future_planned_date,
 )
-from bot.scheduler import scheduler, send_workout_notification
 from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
 from bot.utils.workout_utils import calculate_effective_training_week
+from bot.services.subscription_service import subscription_service
+from zoneinfo import ZoneInfo
 
 
 class WorkoutService:
@@ -131,6 +132,7 @@ class WorkoutService:
         await user_requests.increment_user_training_week(session, user.id, week_to_set=next_week)
         
         # 6. Планирование уведомлений
+        from bot.scheduler import scheduler, send_workout_notification
         logging.info(f"Начинаю планирование {len(workouts)} тренировок для пользователя {user.telegram_id}")
         for workout in workouts:
             run_datetime = workout.planned_date
@@ -250,3 +252,147 @@ class WorkoutService:
             
             workout_datetimes.sort()
             return workout_datetimes[:num_workouts]
+
+
+async def scheduled_weekly_workout_generation(
+    bot: Bot, session_pool: async_sessionmaker, workout_service: WorkoutService
+):
+    """
+    Запускает еженедельную генерацию тренировок для всех пользователей с расписанием.
+    """
+    logging.info("Starting scheduled weekly workout generation for all users.")
+    async with session_pool() as session:
+        users = await user_requests.get_users_with_schedule(session)
+        logging.info(
+            f"Found {len(users)} users with schedules for weekly generation."
+        )
+
+        for user in users:
+            # Открываем новую сессию для каждого пользователя для изоляции
+            async with session_pool() as user_session:
+                try:
+                    logging.info(
+                        f"Generating weekly workout for user_id: {user.id} (telegram_id: {user.telegram_id})"
+                    )
+
+                    can_receive = await subscription_service.can_receive_workout(
+                        user_session, user
+                    )
+                    if not can_receive:
+                        logging.info(
+                            f"User {user.telegram_id} cannot receive workout due to subscription status. Skipping."
+                        )
+                        continue
+
+                    result = await workout_service.create_and_schedule_weekly_workout(
+                        user_session, user.telegram_id
+                    )
+
+                    if result:
+                        _, next_workout_date = result
+                        next_date_str = (
+                            next_workout_date.strftime("%d.%m.%Y")
+                            if next_workout_date
+                            else "на следующей неделе"
+                        )
+                        await bot.send_message(
+                            user.telegram_id,
+                            f"✅ Ваша новая тренировка на неделю сгенерирована!\n\n"
+                            f"Ближайшая тренировка ждет вас {next_date_str}.",
+                        )
+                        logging.info(
+                            f"Successfully generated and notified user {user.telegram_id}."
+                        )
+                    else:
+                        logging.warning(
+                            f"Failed to generate workout for user {user.telegram_id}, result was None."
+                        )
+
+                except Exception as e:
+                    logging.error(
+                        f"Error generating weekly workout for user {user.telegram_id}: {e}",
+                        exc_info=True,
+                    )
+
+    logging.info("Finished scheduled weekly workout generation.")
+
+
+async def check_and_generate_missed_workouts(
+    bot: Bot, session_pool: async_sessionmaker, workout_service: WorkoutService
+):
+    """
+    Проверяет пользователей, которые могли пропустить еженедельную генерацию, и запускает ее.
+    """
+    logging.info("Checking for users with missed weekly workouts...")
+    async with session_pool() as session:
+        users = await user_requests.get_users_with_schedule(session)
+        if not users:
+            logging.info(
+                "No users with schedules found. Skipping missed workout check."
+            )
+            return
+
+        now = datetime.now()
+        last_sunday = now - timedelta(days=(now.weekday() + 1) % 7)
+        last_sunday_22_00_utc = datetime(
+            last_sunday.year,
+            last_sunday.month,
+            last_sunday.day,
+            22,
+            0,
+            0,
+            tzinfo=ZoneInfo("Europe/Moscow"),
+        ).astimezone(tz=None)
+
+        logging.info(f"Checking against last generation time: {last_sunday_22_00_utc}")
+
+        for user in users:
+            async with session_pool() as user_session:
+                try:
+                    last_workout_date = await workout_requests.get_last_workout_date(
+                        user_session, user.id
+                    )
+
+                    if (
+                        last_workout_date is None
+                        or last_workout_date.replace(tzinfo=None) < last_sunday_22_00_utc.replace(tzinfo=None)
+                    ):
+                        logging.info(
+                            f"User {user.telegram_id} missed workout generation. Last one was at {last_workout_date}. Generating now."
+                        )
+
+                        can_receive = await subscription_service.can_receive_workout(
+                            user_session, user
+                        )
+                        if not can_receive:
+                            logging.info(
+                                f"User {user.telegram_id} cannot receive workout due to subscription status. Skipping."
+                            )
+                            continue
+
+                        result = (
+                            await workout_service.create_and_schedule_weekly_workout(
+                                user_session, user.telegram_id
+                            )
+                        )
+                        if result:
+                            await bot.send_message(
+                                user.telegram_id,
+                                "ℹ️ Мы заметили, что ваша тренировка на этой неделе не была создана. "
+                                "Мы все исправили, новый план уже готов!",
+                            )
+                            logging.info(
+                                f"Successfully generated missed workout for user {user.telegram_id}."
+                            )
+                        else:
+                            logging.warning(
+                                f"Failed to generate missed workout for user {user.telegram_id}, result was None."
+                            )
+
+                except Exception as e:
+                    logging.error(
+                        f"Error in missed workout check for user {user.telegram_id}: {e}",
+                        exc_info=True,
+                    )
+
+    logging.info("Finished checking for missed workouts.")

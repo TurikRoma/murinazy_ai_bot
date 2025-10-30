@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from datetime import datetime
+from apscheduler.triggers.cron import CronTrigger
 
 from bot.keyboards.workout import get_start_workout_keyboard
 from bot.requests.workout_requests import (
@@ -16,6 +17,10 @@ from database.models import WorkoutStatusEnum
 from bot.requests import subscription_requests
 from bot.keyboards.workout import get_notification_keyboard
 from bot.keyboards.payment import get_payment_keyboard
+from bot.services.workout_service import (
+    WorkoutService,
+    scheduled_weekly_workout_generation,
+)
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 logger = logging.getLogger(__name__)
@@ -123,3 +128,28 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
                 )
             except Exception as e:
                 logging.error(f"Failed to send trial expiration notification to user {sub.user_id}: {e}")
+
+
+def setup_scheduler(bot: Bot, session_pool: async_sessionmaker, workout_service: WorkoutService):
+    """Настраивает и запускает все фоновые задачи."""
+    # Задача 1: Проверка истекших подписок (каждые 30 секунд)
+    scheduler.add_job(
+        check_expired_subscriptions,
+        trigger="interval",
+        seconds=30,
+        args=[bot, session_pool],
+        id="check_expired_subscriptions",
+        replace_existing=True,
+    )
+
+    # Задача 2: Еженедельная генерация тренировок (каждое ВС в 22:00)
+    scheduler.add_job(
+        scheduled_weekly_workout_generation,
+        trigger=CronTrigger(day_of_week="fri", hour=1, minute=11),
+        args=[bot, session_pool, workout_service],
+        id="weekly_workout_generation",
+        replace_existing=True,
+    )
+
+    scheduler.start()
+    logger.info("Scheduler started with all jobs.")

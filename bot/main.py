@@ -12,10 +12,18 @@ from bot.handlers import main_router
 from bot.handlers.admin import router as admin_router
 from bot.middlewares.db import DbSessionMiddleware, BotObjectMiddleware, WorkoutServiceMiddleware
 from database.connection import create_session_pool, create_tables
-from bot.scheduler import scheduler, check_expired_subscriptions, restore_scheduled_jobs
+from bot.scheduler import (
+    scheduler,
+    check_expired_subscriptions,
+    restore_scheduled_jobs,
+    setup_scheduler,
+)
 from aiogram.dispatcher.middlewares.base import BaseMiddleware
 
-from bot.services.workout_service import WorkoutService
+from bot.services.workout_service import (
+    WorkoutService,
+    check_and_generate_missed_workouts,
+)
 
 # Настройка логирования
 logging.basicConfig(
@@ -53,20 +61,15 @@ async def main():
     # Подключение роутеров
     dp.include_router(admin_router)
     dp.include_router(main_router)
-    
-    # Запуск фоновых задач
-    scheduler.add_job(
-        check_expired_subscriptions,
-        trigger="interval",
-        seconds=30,
-        args=[bot, session_pool],
-        id="check_expired_subscriptions",
-        replace_existing=True,
-    )
-    scheduler.start()
 
-    # Восстановление задач планировщика
+    # Восстановление задач планировщика для уведомлений
     await restore_scheduled_jobs(bot, session_pool)
+
+    # Проверка и генерация пропущенных еженедельных тренировок
+    await check_and_generate_missed_workouts(bot, session_pool, workout_service)
+
+    # Запуск фоновых задач (проверка подписок, еженедельная генерация)
+    setup_scheduler(bot, session_pool, workout_service)
 
     try:
         await bot.delete_webhook(drop_pending_updates=True)

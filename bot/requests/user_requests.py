@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models import User
+from database.models import User, WorkoutSchedule
 from bot.schemas.user import UserRegistrationSchema
 
 
@@ -64,3 +64,10 @@ async def add_score_to_user(session: AsyncSession, user_id: int, points: int = 1
         await session.commit()
         await session.refresh(user)
     return user
+
+
+async def get_users_with_schedule(session: AsyncSession) -> list[User]:
+    """Получает всех пользователей, у которых есть хотя бы одна запись в расписании."""
+    stmt = select(User).join(User.workout_schedules).distinct()
+    result = await session.execute(stmt)
+    return list(result.scalars().all())

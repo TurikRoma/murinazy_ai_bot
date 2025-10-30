@@ -2,6 +2,7 @@ import json
 from openai import AsyncOpenAI
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 
 from bot.config.settings import settings
@@ -145,6 +146,7 @@ MASTER_PROMPT = """
                 *   Если `session_duration` > 65 мин: **20-25** рабочих подходов.
             *   Твоя задача — найти баланс, чтобы уложиться и в лимит по времени, и в методику недели.
         *   **ПРАВИЛО ДЛЯ НОВИЧКОВ (САМОЕ СТРОГОЕ ПРАВИЛО):** Если `fitness_level` = 'beginner' и сплит 'Full Body', ты должен сгенерировать программу тренировок для первого дня, а затем **ПОЛНОСТЬЮ СКОПИРОВАТЬ** её для всех последующих дней. В результате, массив `workout_plan` должен содержать **РОВНО СТОЛЬКО ЭЛЕМЕНТОВ**, сколько указано в `workout_frequency`. Массив `exercises` и всё его содержимое (названия, подходы, повторы, заметки) должны быть **АБСОЛЮТНО ИДЕНТИЧНЫМИ** для каждого дня. Единственное, что должно отличаться в объектах тренировок — это порядковый номер `day` (1, 2, 3 и т.д.). **ЗАПРЕЩЕНО возвращать только один элемент для новичка, если `workout_frequency` > 1.**
+        *   **НОВОЕ ПРАВИЛО ДЛЯ ПРОДВИНУТЫХ (Full Body):** Если `fitness_level` = 'advanced' и сплит 'Full Body', ты ОБЯЗАН обеспечить разнообразие. Упражнения в рамках ОДНОЙ недели НЕ должны повторяться. Каждая тренировка в недельном плане должна состоять из уникального набора упражнений на все основные мышечные группы. Например, если в понедельник на ноги были приседания, то в среду должны быть выпады.
         *   **Заминка (5 мин):** Всегда включай статическую растяжку.
 
 5.  **Правило Времени Отдыха (rest_seconds) (только для `equipment_type` = 'gym'):** Ты ОБЯЗАН устанавливать значение `rest_seconds` строго в зависимости от цели текущей недели, определенной в правиле №1.
@@ -271,16 +273,22 @@ class LLMService:
 
         prompt = MASTER_PROMPT.format(input_json=input_json_str)
 
+        # Вывод в лог для отладки
+        logging.info(f"LLM Prompt for user {user.telegram_id}:\n{prompt}")
+
+        response_json = await self._make_llm_call(prompt)
+        return LLMWorkoutPlan.model_validate(response_json)
+
+    async def _make_llm_call(self, prompt: str) -> dict:
+        """Отправляет запрос к LLM и возвращает JSON."""
         chat_completion = await self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=1,
             timeout=180.0,
         )
-
-        response_json = json.loads(chat_completion.choices[0].message.content)
-        return LLMWorkoutPlan.model_validate(response_json)
+        return json.loads(chat_completion.choices[0].message.content)
 
     def _prepare_user_profile_for_prompt(self, user: User) -> dict:
         """Конвертирует данные пользователя в формат для промпта."""
@@ -313,7 +321,7 @@ class LLMService:
 
     async def generate_ai_coach_response(self, question: str) -> str:
         chat_completion = await self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[{"role": "system", "content": AI_COACH_PROMPT}, {"role": "user", "content": question}],
             temperature=0.2,
             timeout=30.0,
