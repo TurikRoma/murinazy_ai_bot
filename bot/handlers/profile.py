@@ -85,9 +85,16 @@ def format_full_profile_text(
         points_to_next = next_threshold - user_score
         profile_text += f" (до <b>{next_rank}</b> осталось {points_to_next} очков)"
 
+    profile_text += "\n" + "─" * 20 + "\n"
+
+    # 2. Текущий цикл тренировок
+    training_week_info = get_training_week_description(user)
+    if training_week_info:
+        profile_text += f"\n<b>📈 Текущий цикл:</b> {training_week_info}\n"
+    
     profile_text += "\n" + "─" * 20 + "\n\n"
 
-    # 2. Основные данные
+    # 3. Основные данные
     fields = [
         ("gender", user.gender),
         ("age", user.age),
@@ -136,17 +143,13 @@ def format_full_profile_text(
     
     profile_text += "\n" + "─" * 20 + "\n"
 
-    # 4. Подписка и прогресс
-    profile_text += "\n<b>📈 Подписка и прогресс</b>\n"
+    # 5. Подписка
+    profile_text += "\n<b>💳 Подписка</b>\n"
     
-    training_week_info = get_training_week_description(user)
-    if training_week_info:
-        profile_text += f"<b>Текущий цикл:</b> {training_week_info}\n"
-
     if subscription:
         if subscription.status == "trial":
             # Лимит триала = 3 тренировки
-            remaining_workouts = 3 - (subscription.workouts_sent or 0)
+            remaining_workouts = 3 - (subscription.trial_workouts_used or 0)
             profile_text += (
                 f"<b>Статус:</b> Пробный период "
                 f"({max(0, remaining_workouts)} бесплатных тренировок осталось)\n"
