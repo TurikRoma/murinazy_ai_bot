@@ -18,6 +18,7 @@ from bot.services.llm_service import llm_service, MessageLimitStatus
 from database.models import Workout, WorkoutStatusEnum
 from bot.scheduler import scheduler
 from bot.states.workout import WorkoutState
+from bot.states.llm import LLMState
 from bot.services.subscription_service import subscription_service
 from bot.requests import subscription_requests
 from database.models import User
@@ -460,6 +461,14 @@ async def get_workout_handler(
         logging.error(f"Error generating workout: {e}", exc_info=True)
 
 
+@router.message(LLMState.processing)
+async def llm_is_processing_handler(message: Message):
+    """
+    Обрабатывает сообщения, когда LLM уже генерирует ответ.
+    """
+    await message.answer("Пожалуйста, дождитесь ответа на предыдущий запрос.")
+
+
 @router.message(F.text)
 async def ai_coach_text_handler(message: Message, state: FSMContext, session: AsyncSession):
     """
@@ -515,7 +524,7 @@ async def ai_coach_text_handler(message: Message, state: FSMContext, session: As
             )
 
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
-
+    await state.set_state(LLMState.processing)
     try:
         response = await llm_service.generate_ai_coach_response(
             message.text,
@@ -527,4 +536,6 @@ async def ai_coach_text_handler(message: Message, state: FSMContext, session: As
             "❌ Извините, произошла ошибка при обработке вашего вопроса. "
             "Попробуйте задать вопрос еще раз."
         )
+    finally:
+        await state.clear()
 
