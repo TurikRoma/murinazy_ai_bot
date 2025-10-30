@@ -268,9 +268,6 @@ class LLMService:
 
         prompt = MASTER_PROMPT.format(input_json=input_json_str)
 
-        # Вывод в лог для отладки
-        logging.info(f"LLM Prompt for user {user.telegram_id}:\n{prompt}")
-
         response_json = await self._make_llm_call(prompt)
         return LLMWorkoutPlan.model_validate(response_json)
 
