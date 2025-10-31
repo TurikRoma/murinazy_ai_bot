@@ -123,7 +123,7 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
             try:
                 await bot.send_message(
                     chat_id=sub.user.telegram_id,
-                    text="👋 Ваш пробный период завершен. Чтобы получить план на новую неделю, оформите подписку.",
+                    text="👋 Ваш пробный период завершен. Чтобы получать след тренировки, оформите подписку.",
                     reply_markup=get_payment_keyboard()
                 )
             except Exception as e:

@@ -31,7 +31,6 @@ HUMAN_READABLE_NAMES = {
     "target_weight": "Целевой вес",
     "workout_frequency": "Частота тренировок",
     "equipment_type": "Тип оборудования",
-    "trainer_style": "Стиль тренера",
     "workout_schedule": "Расписание",
     # --- значения ---
     "male": "Мужской",
@@ -44,9 +43,6 @@ HUMAN_READABLE_NAMES = {
     "maintenance": "Поддержание формы",
     "gym": "Тренажерный зал",
     "bodyweight": "Свой вес",
-    "goggins": "Гоггинс",
-    "schwarzenegger": "Шварцнегер",
-    "coleman": "Колеман",
 }
 
 # Словарь для перевода коротких дней недели в полные
@@ -105,7 +101,6 @@ def format_full_profile_text(
         ("target_weight", user.target_weight),
         ("workout_frequency", user.workout_frequency),
         ("equipment_type", user.equipment_type),
-        ("trainer_style", user.trainer_style),
     ]
 
     for field_name, value in fields:

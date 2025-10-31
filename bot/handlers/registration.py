@@ -21,7 +21,6 @@ from bot.keyboards.registration import (
     get_post_registration_keyboard,
     get_workout_schedule_keyboard,
     get_workout_schedule_day_keyboard,
-    get_trainer_style_keyboard,
     get_main_menu_keyboard,
 )
 from bot.schemas.user import UserRegistrationSchema
@@ -45,7 +44,6 @@ HUMAN_READABLE_NAMES = {
     "target_weight": "Целевой вес",
     "workout_frequency": "Частота тренировок",
     "equipment_type": "Тип оборудования",
-    "trainer_style": "Стиль тренера",
     "workout_schedule": "Расписание",
     # --- значения ---
     "male": "Мужской",
@@ -58,9 +56,6 @@ HUMAN_READABLE_NAMES = {
     "maintenance": "Поддержание формы",
     "gym": "Тренажерный зал",
     "bodyweight": "Свой вес",
-    "goggins": "Гоггинс",
-    "schwarzenegger": "Шварцнегер",
-    "coleman": "Колеман",
 }
 
 # Словарь для ручного перевода дней недели (независимо от локали)
@@ -300,22 +295,9 @@ async def process_workout_schedule(query: CallbackQuery, state: FSMContext):
 
 @router.callback_query(RegistrationStates.waiting_for_equipment_type, F.data.startswith("equip_"))
 async def process_equipment_type(query: CallbackQuery, state: FSMContext):
-    """Обработка выбора оборудования и переход к выбору стиля тренера."""
+    """Обработка выбора оборудования и переход к подтверждению."""
     equipment = query.data.split("_")[1]
     await state.update_data(equipment_type=equipment)
-    await state.set_state(RegistrationStates.waiting_for_trainer_style)
-    await query.message.edit_text(
-        "Какой стиль AI тренера тебе больше нравится?",
-        reply_markup=get_trainer_style_keyboard(),
-    )
-    await query.answer()
-
-
-@router.callback_query(RegistrationStates.waiting_for_trainer_style, F.data.startswith("trainer_"))
-async def process_trainer_style(query: CallbackQuery, state: FSMContext):
-    """Обработка выбора стиля тренера и переход к подтверждению."""
-    trainer = query.data.split("_")[1]
-    await state.update_data(trainer_style=trainer)
     await state.set_state(RegistrationStates.waiting_for_confirmation)
 
     user_data = await state.get_data()
@@ -327,7 +309,7 @@ async def process_trainer_style(query: CallbackQuery, state: FSMContext):
     order = [
         "gender", "age", "height", "current_weight", "fitness_level", 
         "goal", "target_weight", "workout_frequency", "workout_schedule", 
-        "equipment_type", "trainer_style"
+        "equipment_type"
     ]
 
     for key in order:

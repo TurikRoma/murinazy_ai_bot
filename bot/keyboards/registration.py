@@ -126,19 +126,6 @@ def get_workout_schedule_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def get_trainer_style_keyboard() -> InlineKeyboardMarkup:
-    """Создает клавиатуру для выбора стиля AI тренера."""
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="Гоггинс", callback_data="trainer_goggins"),
-        InlineKeyboardButton(text="Шварцнегер", callback_data="trainer_schwarzenegger"),
-    )
-    builder.row(
-        InlineKeyboardButton(text="Колеман", callback_data="trainer_coleman"),
-    )
-    return builder.as_markup()
-
-
 def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
     """Возвращает главную клавиатуру с кнопками 'Профиль' и 'Приобрести подписку'."""
     builder = ReplyKeyboardBuilder()

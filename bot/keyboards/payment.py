@@ -8,7 +8,7 @@ def get_payment_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
             InlineKeyboardButton(
-                text="Оплатить 1 месяц (1 ⭐️)", callback_data="buy_subscription"
+                text="Оплатить 1 месяц (50 ⭐️)", callback_data="buy_subscription"
             )
         ]
     ]
