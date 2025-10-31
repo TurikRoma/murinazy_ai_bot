@@ -33,7 +33,7 @@ async def process_buy_subscription(query: CallbackQuery):
             description="Полный доступ ко всем функциям на 1 месяц.",
             payload="monthly_subscription",
             currency="XTR",
-            prices=[LabeledPrice(label="Подписка на 1 месяц", amount=1)],
+            prices=[LabeledPrice(label="Подписка на 1 месяц", amount=50)],
             start_parameter="one-month-subscription",
         )
     except Exception as e:
