@@ -9,3 +9,5 @@ def get_extend_subscription_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="❌ Отмена", callback_data="cancel_extend_subscription")
     builder.adjust(2)
     return builder.as_markup()
+
+

@@ -238,7 +238,7 @@ async def confirm_extend_subscription_handler(query: CallbackQuery, session: Asy
             description="Продление доступа ко всем функциям на 1 месяц.",
             payload="monthly_subscription", # Такой же payload, чтобы обработчик сработал
             currency="XTR",
-            prices=[LabeledPrice(label="Продление подписки на 1 месяц", amount=1)],
+            prices=[LabeledPrice(label="Продление подписки на 1 месяц", amount=50)],
             start_parameter="one-month-subscription-extend",
         )
         await query.message.delete() # Удаляем сообщение с кнопками "Да/Нет"

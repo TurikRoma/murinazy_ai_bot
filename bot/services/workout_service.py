@@ -11,6 +11,8 @@ from bot.requests.workout_requests import (
     get_exercises_from_last_workouts,
     get_latest_planned_date,
     get_latest_future_planned_date,
+    get_workouts_for_period,
+    get_latest_workout_for_user,
 )
 from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
@@ -36,10 +38,44 @@ class WorkoutService:
             logging.error(f"User with telegram_id {telegram_id} not found.")
             return None
 
-        # 1. Вычисляем "эффективную" неделю для LLM.
-        # Мы всегда генерируем план НА СЛЕДУЮЩУЮ неделю, поэтому добавляем +1.
-        # Если current_training_week is None (самый первый запуск), считаем, что текущая неделя 0.
+        # --- Логика сброса цикла при изменении настроек или неполной неделе ---
         next_week = (user.current_training_week or 0) + 1
+        
+        if next_week > 1:
+            latest_workout = await get_latest_workout_for_user(session, user.id)
+            force_new_cycle = False
+            reason_message = ""
+
+            if latest_workout:
+                end_date = latest_workout.planned_date.date()
+                start_date = end_date - timedelta(days=7)
+                
+                # Получаем все тренировки за последнюю неделю цикла
+                last_week_workouts = await get_workouts_for_period(session, user.id, start_date, end_date)
+                
+                # 1. Проверка на неполную неделю
+                if len(last_week_workouts) < (user.workout_frequency or 1):
+                    force_new_cycle = True
+                    reason_message = "прошлая неделя была неполной"
+                
+                # 2. Проверка на смену оборудования
+                if not force_new_cycle and last_week_workouts:
+                    first_exercise = await exercise_requests.get_first_exercise_from_workout(session, last_week_workouts[0].id)
+                    if first_exercise and first_exercise.equipment_type != user.equipment_type:
+                        force_new_cycle = True
+                        reason_message = "вы сменили оборудование"
+
+            if force_new_cycle:
+                logging.info(f"User {user.id} settings changed or last week incomplete. Forcing new training cycle.")
+                await self.bot.send_message(
+                    user.telegram_id,
+                    f"ℹ️ Я заметил, что {reason_message}. "
+                    "Чтобы программа была максимально сбалансированной, я начинаю для вас новый тренировочный цикл!"
+                )
+                await user_requests.increment_user_training_week(session, user.id, week_to_set=1)
+                next_week = 1
+        
+        # 1. Вычисляем "эффективную" неделю для LLM.
         effective_week = calculate_effective_training_week(
             next_week, user.fitness_level.value
         )

@@ -2,8 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 from sqlalchemy.future import select
 from typing import List, Sequence
+from sqlalchemy.orm import selectinload
 
-from database.models import Exercise, EquipmentTypeEnum
+from database.models import Exercise, EquipmentTypeEnum, WorkoutExercise
 from bot.schemas.exercise import ExerciseCreate
 
 
@@ -47,3 +48,17 @@ async def get_exercise_by_name(
     stmt = select(Exercise).where(Exercise.name == name)
     result = await session.execute(stmt)
     return result.scalars().first()
+
+
+async def get_first_exercise_from_workout(session: AsyncSession, workout_id: int) -> Exercise | None:
+    """Получает первое упражнение из конкретной тренировки."""
+    stmt = (
+        select(WorkoutExercise)
+        .where(WorkoutExercise.workout_id == workout_id)
+        .order_by(WorkoutExercise.order)
+        .limit(1)
+        .options(selectinload(WorkoutExercise.exercise))
+    )
+    result = await session.execute(stmt)
+    workout_exercise = result.scalars().first()
+    return workout_exercise.exercise if workout_exercise else None
