@@ -1,6 +1,6 @@
 from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.filters import Command, StateFilter
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
@@ -19,6 +19,7 @@ from database.models import Workout, WorkoutStatusEnum
 from bot.scheduler import scheduler
 from bot.states.workout import WorkoutState
 from bot.states.llm import LLMState
+from bot.states.chat import ChatState
 from bot.services.subscription_service import subscription_service
 from bot.requests import subscription_requests
 from database.models import User
@@ -29,6 +30,7 @@ from bot.keyboards.workout import (
     get_exercise_navigation_keyboard,
 )
 from bot.keyboards.payment import get_payment_keyboard
+from bot.keyboards.registration import get_main_menu_keyboard
 
 router = Router()
 
@@ -161,11 +163,46 @@ async def send_current_exercise(
     await state.update_data(last_exercise_message_id=sent_message.message_id)
 
 
+@router.message(Command("stopchat"), ChatState.chatting)
+@router.message(F.text.lower() == "завершить чат", ChatState.chatting)
+async def stop_chat_handler(message: Message, state: FSMContext):
+    """
+    Обработчик для завершения чата с тренером (только в режиме ChatState).
+    """
+    await state.clear()
+    await message.answer(
+        "Чат завершен.",
+        reply_markup=get_main_menu_keyboard()
+    )
+
+
+@router.message(F.text == "💬 Чат с тренером")
+async def start_chat_handler(message: Message, state: FSMContext, session: AsyncSession):
+    """
+    Обработчик для начала чата с тренером.
+    """
+    user = await get_user_by_telegram_id(session, message.from_user.id)
+    if not user:
+        await message.answer(
+            "Пожалуйста, сначала пройдите регистрацию с помощью команды /start."
+        )
+        return
+
+    await state.set_state(ChatState.chatting)
+    await message.answer(
+        "💬 Вы вошли в режим чата с AI-тренером. Задайте свой вопрос.\n\n"
+        "Чтобы выйти, нажмите /stopchat или напишите 'завершить чат'."
+    )
+
+
 @router.callback_query(F.data == "get_workout")
-async def get_workout_handler_callback(query: CallbackQuery, session: AsyncSession):
+async def get_workout_handler_callback(
+    query: CallbackQuery, session: AsyncSession, state: FSMContext
+):
     """
     Находит ближайшую запланированную тренировку и показывает ее.
     """
+    await state.clear()
     user = await get_user_by_telegram_id(session, query.from_user.id)
     if not user:
         await query.answer(
@@ -469,17 +506,11 @@ async def llm_is_processing_handler(message: Message):
     await message.answer("Пожалуйста, дождитесь ответа на предыдущий запрос.")
 
 
-@router.message(F.text)
+@router.message(StateFilter(ChatState.chatting, WorkoutState.in_progress), F.text)
 async def ai_coach_text_handler(message: Message, state: FSMContext, session: AsyncSession):
     """
-    Обработчик всех текстовых сообщений, которые не были перехвачены другими handlers.
+    Обработчик текстовых сообщений в режиме чата с тренером и во время тренировки.
     """
-    current_state = await state.get_state()
-    if current_state is not None:
-        if current_state == WorkoutState.in_progress:
-            await message.answer("Пожалуйста, сначала завершите текущую тренировку.")
-        return
-
     user = await get_user_by_telegram_id(session, message.from_user.id)
     if not user:
         await message.answer(
@@ -537,5 +568,36 @@ async def ai_coach_text_handler(message: Message, state: FSMContext, session: As
             "Попробуйте задать вопрос еще раз."
         )
     finally:
-        await state.clear()
+        # После ответа LLM, возвращаемся в правильное состояние
+        current_state_str = await state.get_state()
+        if current_state_str == LLMState.processing:
+            data = await state.get_data()
+            # Если в данных есть workout_id, значит мы были в процессе тренировки
+            if data.get("workout_id"):
+                await state.set_state(WorkoutState.in_progress)
+            else:
+                await state.set_state(ChatState.chatting)
+
+
+@router.message(F.text)
+async def default_text_handler(message: Message, session: AsyncSession):
+    """
+    Обработчик текстовых сообщений вне состояний.
+    """
+    user = await get_user_by_telegram_id(session, message.from_user.id)
+    if not user:
+        await message.answer(
+            "Пожалуйста, сначала пройдите регистрацию с помощью команды /start."
+        )
+        return
+
+    # Игнорируем команды из главного меню, чтобы они не вызывали это сообщение
+    menu_commands = ["👤 Профиль", "🎵 Плейлисты", "💳 Подписка"]
+    if message.text in menu_commands:
+        return
+
+    await message.answer(
+        "Чтобы начать диалог с тренером, пожалуйста, нажмите кнопку '💬 Чат с тренером' в меню.",
+        reply_markup=get_main_menu_keyboard()
+    )
 

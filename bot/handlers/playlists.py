@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 router = Router()
@@ -16,11 +17,12 @@ PLAYLISTS_TEXT = """
 """
 
 @router.message(F.text.in_(["🎵 Плейлисты", "Плейлисты", "плейлисты"]))
-async def show_playlists(message: Message):
+async def show_playlists(message: Message, state: FSMContext):
     """
     Обработчик нажатия кнопки 'Плейлисты'.
-    Отправляет сообщение с ссылками на плейлисты.
+    Отправляет сообщение с ссылками на плейлисты и сбрасывает состояние.
     """
+    await state.clear()
     await message.answer(
         PLAYLISTS_TEXT,
         parse_mode="HTML",

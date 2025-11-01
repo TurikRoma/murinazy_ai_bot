@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     Message,
     CallbackQuery,
@@ -16,8 +17,22 @@ from bot.requests.workout_requests import get_next_workout_for_user
 from bot.requests import subscription_requests
 from bot.services.subscription_service import subscription_service
 from bot.services.workout_service import WorkoutService
+from bot.keyboards.payment import get_payment_keyboard
+from bot.keyboards.registration import get_main_menu_keyboard
 
 router = Router()
+
+
+@router.message(F.text == "💳 Подписка")
+async def subscription_info_handler(message: Message, state: FSMContext):
+    """
+    Отправляет информацию о подписке и сбрасывает состояние.
+    """
+    await state.clear()
+    await message.answer(
+        "Выберите действие:",
+        reply_markup=get_payment_keyboard()
+    )
 
 
 @router.callback_query(F.data == "buy_subscription")

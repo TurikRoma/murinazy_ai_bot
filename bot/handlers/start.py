@@ -28,12 +28,12 @@ async def start_registration_process(query: CallbackQuery, state: FSMContext):
 
 
 @router.message(CommandStart())
-async def command_start(message: Message):
+async def command_start(message: Message, state: FSMContext):
     """
     Обработчик команды /start.
     Отправляет приветственное сообщение и кнопку 'Начать'.
     """
-    
+    await state.clear()
     await message.answer(
         """🔥 Привет, машина! Я — Murinzy AI, твой новый тренер.
 Здесь ты получишь всё, чтобы реально прогрессировать и построить тело своей мечты 💪

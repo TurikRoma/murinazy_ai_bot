@@ -162,10 +162,12 @@ def format_full_profile_text(
 
 
 @router.message(F.text.in_(["👤 Профиль", "Профиль", "профиль"]))
-async def show_profile(message: Message, session: AsyncSession):
+async def show_profile(message: Message, session: AsyncSession, state: FSMContext):
     """
     Обработчик нажатия кнопки Профиль (Reply кнопка).
+    Сбрасывает состояние.
     """
+    await state.clear()
     user = await get_user_by_telegram_id(session, message.from_user.id)
     
     if not user:

@@ -127,13 +127,16 @@ def get_workout_schedule_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Возвращает главную клавиатуру с кнопками 'Профиль' и 'Приобрести подписку'."""
+    """Возвращает главную клавиатуру."""
     builder = ReplyKeyboardBuilder()
     builder.row(
         KeyboardButton(text="👤 Профиль"),
         KeyboardButton(text="🎵 Плейлисты")
     )
-    builder.row(KeyboardButton(text="💳 Приобрести подписку"))
+    builder.row(
+        KeyboardButton(text="💬 Чат с тренером"),
+        KeyboardButton(text="💳 Подписка")
+    )
     return builder.as_markup(resize_keyboard=True, persistent=True)
 
 

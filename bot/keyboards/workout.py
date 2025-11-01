@@ -49,7 +49,7 @@ def get_exercise_navigation_keyboard(
         pass
 
     if current_index < total_exercises - 1:
-        row.append(InlineKeyboardButton(text="➡️ Далее", callback_data="next_exercise"))
+        row.append(InlineKeyboardButton(text="➡️ Следующее упражнение", callback_data="next_exercise"))
     
     if row:
         buttons.append(row)
@@ -57,7 +57,7 @@ def get_exercise_navigation_keyboard(
     buttons.append(
         [
             InlineKeyboardButton(
-                text="✅ Завершить", callback_data=f"finish_workout_{workout_id}"
+                text="✅ Завершить тренировку", callback_data=f"finish_workout_{workout_id}"
             )
         ]
     )
