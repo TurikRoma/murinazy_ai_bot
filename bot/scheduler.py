@@ -136,7 +136,7 @@ def setup_scheduler(bot: Bot, session_pool: async_sessionmaker, workout_service:
     scheduler.add_job(
         check_expired_subscriptions,
         trigger="interval",
-        seconds=30,
+        hours=4,
         args=[bot, session_pool],
         id="check_expired_subscriptions",
         replace_existing=True,
@@ -145,7 +145,7 @@ def setup_scheduler(bot: Bot, session_pool: async_sessionmaker, workout_service:
     # Задача 2: Еженедельная генерация тренировок (каждое ВС в 22:00)
     scheduler.add_job(
         scheduled_weekly_workout_generation,
-        trigger=CronTrigger(day_of_week="fri", hour=1, minute=11),
+        trigger=CronTrigger(day_of_week="sun", hour=22, minute=0),
         args=[bot, session_pool, workout_service],
         id="weekly_workout_generation",
         replace_existing=True,
