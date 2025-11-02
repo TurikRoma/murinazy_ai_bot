@@ -3,6 +3,7 @@ from sqlalchemy import select
 
 from database.models import User, WorkoutSchedule
 from bot.schemas.user import UserRegistrationSchema
+from bot.utils.rank_utils import get_rank_by_score
 
 
 async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int) -> User | None:
@@ -56,14 +57,23 @@ async def increment_user_training_week(
     return user
 
 
-async def add_score_to_user(session: AsyncSession, user_id: int, points: int = 1) -> User | None:
-    """Добавляет очки пользователю за выполнение тренировки."""
+async def add_score_to_user(
+    session: AsyncSession, user_id: int, points: int = 1
+) -> tuple[User | None, str, str]:
+    """Добавляет очки пользователю и возвращает старое и новое звание."""
     user = await session.get(User, user_id)
     if user:
-        user.score = (user.score or 0) + points
+        old_score = user.score or 0
+        old_rank = get_rank_by_score(old_score)
+
+        user.score = old_score + points
         await session.commit()
         await session.refresh(user)
-    return user
+
+        new_rank = get_rank_by_score(user.score)
+        return user, old_rank, new_rank
+
+    return None, "Без звания", "Без звания"
 
 
 async def get_users_with_schedule(session: AsyncSession) -> list[User]:

@@ -4,6 +4,7 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+from aiogram.exceptions import TelegramBadRequest
 
 from bot.requests.user_requests import get_user_by_telegram_id, add_score_to_user
 from bot.requests.workout_requests import (
@@ -131,34 +132,48 @@ async def send_current_exercise(
     # Отправляем видео или гифку с подписью и клавиатурой
     media_id = exercise.video_id or exercise.gif_id
     
-    if exercise.video_id:
-        sent_message = await message.answer_video(
-            video=exercise.video_id,
-            caption=caption,
-            reply_markup=get_exercise_navigation_keyboard(
-                workout_id, current_index, total_exercises
-            ),
-            parse_mode="HTML",
-        )
-    elif exercise.gif_id:
-        sent_message = await message.answer_animation(
-            animation=exercise.gif_id,
-            caption=caption,
-            reply_markup=get_exercise_navigation_keyboard(
-                workout_id, current_index, total_exercises
-            ),
-            parse_mode="HTML",
-        )
-    else:
-        # Если нет ни видео, ни гифки
-        sent_message = await message.answer(
-            caption,
-            reply_markup=get_exercise_navigation_keyboard(
-                workout_id, current_index, total_exercises
-            ),
-            parse_mode="HTML",
-        )
-
+    try:
+        if exercise.video_id:
+            sent_message = await message.answer_video(
+                video=exercise.video_id,
+                caption=caption,
+                reply_markup=get_exercise_navigation_keyboard(
+                    workout_id, current_index, total_exercises
+                ),
+                parse_mode="HTML",
+            )
+        elif exercise.gif_id:
+            sent_message = await message.answer_animation(
+                animation=exercise.gif_id,
+                caption=caption,
+                reply_markup=get_exercise_navigation_keyboard(
+                    workout_id, current_index, total_exercises
+                ),
+                parse_mode="HTML",
+            )
+        else:
+            # Если нет ни видео, ни гифки
+            sent_message = await message.answer(
+                caption,
+                reply_markup=get_exercise_navigation_keyboard(
+                    workout_id, current_index, total_exercises
+                ),
+                parse_mode="HTML",
+            )
+    except TelegramBadRequest as e:
+        if "wrong file identifier" in str(e).lower() or "http url specified" in str(e).lower():
+            logging.warning(
+                f"Invalid file_id '{media_id}' for exercise '{exercise.name}'. Sending text only. Error: {e}"
+            )
+            sent_message = await message.answer(
+                caption,
+                reply_markup=get_exercise_navigation_keyboard(
+                    workout_id, current_index, total_exercises
+                ),
+                parse_mode="HTML",
+            )
+        else:
+            raise
     # Сохраняем ID сообщения, чтобы его можно было удалить
     await state.update_data(last_exercise_message_id=sent_message.message_id)
 
@@ -373,7 +388,15 @@ async def finish_workout_handler(
 
         user = await get_user_by_telegram_id(session, query.from_user.id)
         if user:
-            await add_score_to_user(session, user.id, points=1)
+            updated_user, old_rank, new_rank = await add_score_to_user(
+                session, user.id, points=1
+            )
+            if updated_user and old_rank != new_rank:
+                await query.message.answer(
+                    f"🎉 <b>Поздравляем!</b> 🎉\n\n"
+                    f"Вы достигли нового звания: <b>{new_rank}</b>!\n\n"
+                    "Так держать! Ваша настойчивость приносит плоды. Продолжайте в том же духе, и вы достигнете невероятных высот! 💪",parse_mode="HTML"
+                )
 
             # Проверяем подписку и отправляем уведомление, если нужно
             if await _check_and_notify_for_subscription(query, session, user):
