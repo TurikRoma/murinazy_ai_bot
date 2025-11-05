@@ -1,7 +1,7 @@
 services:
   bot:
     build: .
-    command: tail -f /dev/null
+    command: python -m bot.main
     env_file:
       - .env
     depends_on:
