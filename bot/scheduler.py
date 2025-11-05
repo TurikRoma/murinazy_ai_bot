@@ -149,6 +149,7 @@ def setup_scheduler(bot: Bot, session_pool: async_sessionmaker, workout_service:
         args=[bot, session_pool, workout_service],
         id="weekly_workout_generation",
         replace_existing=True,
+        misfire_grace_time=3600,  # 1 час
     )
 
     scheduler.start()

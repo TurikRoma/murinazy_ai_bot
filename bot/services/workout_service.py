@@ -13,6 +13,8 @@ from bot.requests.workout_requests import (
     get_latest_future_planned_date,
     get_workouts_for_period,
     get_latest_workout_for_user,
+    get_next_workout_for_user,
+    has_planned_workouts_for_upcoming_week,
 )
 from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
@@ -307,6 +309,15 @@ async def scheduled_weekly_workout_generation(
             # Открываем новую сессию для каждого пользователя для изоляции
             async with session_pool() as user_session:
                 try:
+                    # ПРОВЕРКА: Если у пользователя уже есть план на неделю, пропускаем
+                    if await workout_requests.has_planned_workouts_for_upcoming_week(
+                        user_session, user.id
+                    ):
+                        logging.info(
+                            f"User {user.telegram_id} already has a planned workout for the upcoming week. Skipping generation."
+                        )
+                        continue
+
                     logging.info(
                         f"Generating weekly workout for user_id: {user.id} (telegram_id: {user.telegram_id})"
                     )
@@ -325,10 +336,13 @@ async def scheduled_weekly_workout_generation(
                     )
 
                     if result:
-                        _, next_workout_date = result
+                        # Получаем самую ближайшую тренировку из БД, а не из результата
+                        next_workout = await workout_requests.get_next_workout_for_user(
+                            user_session, user.id
+                        )
                         next_date_str = (
-                            next_workout_date.strftime("%d.%m.%Y")
-                            if next_workout_date
+                            next_workout.planned_date.strftime("%d.%m.%Y")
+                            if next_workout
                             else "на следующей неделе"
                         )
                         await bot.send_message(

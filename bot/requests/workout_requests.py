@@ -94,6 +94,31 @@ async def get_latest_future_planned_date(session: AsyncSession, user_id: int) ->
     return result.scalars().first()
 
 
+async def has_planned_workouts_for_upcoming_week(session: AsyncSession, user_id: int) -> bool:
+    """
+    Проверяет, есть ли у пользователя запланированные тренировки
+    начиная с текущего момента и до конца следующего воскресенья.
+    """
+    now = datetime.datetime.now()
+    # Конец следующего воскресенья
+    days_until_next_sunday = 6 - now.weekday() + 7
+    end_of_next_week = now + datetime.timedelta(days=days_until_next_sunday)
+    end_of_next_week = end_of_next_week.replace(hour=23, minute=59, second=59)
+
+    stmt = (
+        select(Workout.id)
+        .where(
+            Workout.user_id == user_id,
+            Workout.status == WorkoutStatusEnum.planned,
+            Workout.planned_date >= now,
+            Workout.planned_date <= end_of_next_week,
+        )
+        .limit(1)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() is not None
+
+
 async def create_workout_with_exercises(session: AsyncSession, user_id: int, workout_plan: "LLMWorkoutPlan") -> Workout:
     """Создает новую тренировку и связанные с ней упражнения."""
     
