@@ -10,6 +10,7 @@ from sqlalchemy import (
     Time,
     Text,
     func,
+    BigInteger,
 )
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
 from typing import List
@@ -78,7 +79,8 @@ class User(Base, TimestampMixin):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String, nullable=True)
     gender: Mapped[GenderEnum] = mapped_column(Enum(GenderEnum), nullable=True)
     age: Mapped[int] = mapped_column(Integer, nullable=True)
     height: Mapped[int] = mapped_column(Integer, nullable=True)

@@ -354,6 +354,7 @@ async def confirm_registration(
     loading_message = None
     try:
         user_data_dict = await state.get_data()
+        user_data_dict["username"] = query.from_user.username
         registration_schema = UserRegistrationSchema(**user_data_dict)
 
         # Проверяем, существовал ли пользователь до обновления

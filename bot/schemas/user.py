@@ -22,3 +22,4 @@ class UserRegistrationSchema(BaseModel):
     workout_frequency: Optional[int] = Field(None, ge=1, le=7)
     equipment_type: Optional[EquipmentTypeEnum] = None
     trainer_style: Optional[TrainerStyleEnum] = None
+    username: Optional[str] = None
