@@ -17,6 +17,7 @@ from database.models import WorkoutStatusEnum
 from bot.requests import subscription_requests
 from bot.keyboards.workout import get_notification_keyboard
 from bot.keyboards.payment import get_payment_keyboard
+from bot.services.subscription_service import subscription_service
 from bot.services.workout_service import (
     WorkoutService,
     scheduled_weekly_workout_generation,
@@ -63,6 +64,12 @@ async def send_workout_notification(
         )
         logger.info(
             f"Уведомление о тренировке #{workout_id} успешно отправлено пользователю {user_id}"
+        )
+
+        # Фиксируем отправку (важно для триала)
+        await subscription_service.record_workout_sent(session, workout.user)
+        logger.info(
+            f"Отправка тренировки #{workout_id} засчитана для пользователя {user_id}"
         )
 
         # Обновляем статус тренировки на "отправлено"
