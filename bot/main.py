@@ -62,11 +62,9 @@ async def main():
     dp.include_router(admin_router)
     dp.include_router(main_router)
 
-    # Восстановление задач планировщика для уведомлений
-    await restore_scheduled_jobs(bot, session_pool)
-
-    # Проверка и генерация пропущенных еженедельных тренировок
-    await check_and_generate_missed_workouts(bot, session_pool, workout_service)
+    # Запускаем восстановление и проверку в фоновом режиме
+    asyncio.create_task(restore_scheduled_jobs(bot, session_pool))
+    asyncio.create_task(check_and_generate_missed_workouts(bot, session_pool, workout_service))
 
     # Запуск фоновых задач (проверка подписок, еженедельная генерация)
     setup_scheduler(bot, session_pool, workout_service)
