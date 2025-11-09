@@ -40,42 +40,51 @@ class WorkoutService:
             logging.error(f"User with telegram_id {telegram_id} not found.")
             return None
 
+        # --- Проверка на наличие будущих тренировок ---
+        next_workout = await get_next_workout_for_user(session, user.id)
+        if next_workout:
+            logging.info(
+                f"User {user.id} already has future workouts planned. Skipping generation."
+            )
+            return None # Ничего не делаем, если уже есть план
+
         # --- Логика сброса цикла при изменении настроек или неполной неделе ---
-        next_week = (user.current_training_week or 0) + 1
-        
-        if next_week > 1:
-            latest_workout = await get_latest_workout_for_user(session, user.id)
+        current_week = user.current_training_week or 0
+        if current_week > 0:
             force_new_cycle = False
             reason_message = ""
 
-            if latest_workout:
-                end_date = latest_workout.planned_date.date()
-                start_date = end_date - timedelta(days=7)
-                
-                # Получаем все тренировки за последнюю неделю цикла
-                last_week_workouts = await get_workouts_for_period(session, user.id, start_date, end_date)
-                
-                # 1. Проверка на неполную неделю
-                if len(last_week_workouts) < (user.workout_frequency or 1):
+            # Анализируем последнюю завершенную неделю (7 дней назад от сегодня)
+            end_date = datetime.now().date()
+            start_date = end_date - timedelta(days=7)
+            
+            last_week_workouts = await get_workouts_for_period(session, user.id, start_date, end_date)
+
+            # 1. Проверка на неполную неделю
+            if len(last_week_workouts) < (user.workout_frequency or 1):
+                force_new_cycle = True
+                reason_message = "прошлая неделя была неполной"
+            
+            # 2. Проверка на смену оборудования
+            if not force_new_cycle and last_week_workouts:
+                # Сортируем, чтобы взять последнюю тренировку недели
+                last_week_workouts.sort(key=lambda w: w.planned_date, reverse=True)
+                first_exercise = await exercise_requests.get_first_exercise_from_workout(session, last_week_workouts[0].id)
+                if first_exercise and first_exercise.equipment_type != user.equipment_type:
                     force_new_cycle = True
-                    reason_message = "прошлая неделя была неполной"
-                
-                # 2. Проверка на смену оборудования
-                if not force_new_cycle and last_week_workouts:
-                    first_exercise = await exercise_requests.get_first_exercise_from_workout(session, last_week_workouts[0].id)
-                    if first_exercise and first_exercise.equipment_type != user.equipment_type:
-                        force_new_cycle = True
-                        reason_message = "вы сменили оборудование"
+                    reason_message = "вы сменили оборудование"
 
             if force_new_cycle:
                 logging.info(f"User {user.id} settings changed or last week incomplete. Forcing new training cycle.")
-                await self.bot.send_message(
-                    user.telegram_id,
-                    f"ℹ️ Я заметил, что {reason_message}. "
-                    "Чтобы программа была максимально сбалансированной, я начинаю для вас новый тренировочный цикл!"
-                )
+                # await self.bot.send_message(
+                #     user.telegram_id,
+                #     f"ℹ️ Я заметил, что {reason_message}. "
+                #     "Чтобы программа была максимально сбалансированной, я начинаю для вас новый тренировочный цикл!"
+                # )
                 await user_requests.increment_user_training_week(session, user.id, week_to_set=1)
-                next_week = 1
+        
+        # Обновляем неделю пользователя для генерации
+        next_week = (user.current_training_week or 0) + 1
         
         # 1. Вычисляем "эффективную" неделю для LLM.
         effective_week = calculate_effective_training_week(
