@@ -261,7 +261,10 @@ async def get_workout_with_exercises(
     stmt = (
         select(Workout)
         .where(Workout.id == workout_id)
-        .options(selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.exercise))
+        .options(
+            selectinload(Workout.user),  # Добавляем загрузку пользователя
+            selectinload(Workout.workout_exercises).selectinload(WorkoutExercise.exercise)
+        )
     )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()

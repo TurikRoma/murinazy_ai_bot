@@ -13,7 +13,7 @@ PLAYLISTS_TEXT = """
 
 🎧 <b>Яндекс.Музыка:</b> <a href="https://music.yandex.ru/users/danilamurin@gmail.com/playlists/1000?utm_medium=copy_link">Слушать</a>
 
-🎧 <b>ВКонтакте:</b> <a href="https://vk.com/audio_playlist262275660_51">Слушать</a>
+🎧 <b>ВКонтакте:</b> <a href="https://vk.com/music?z=audio_playlist262275660_51&access_key=2852d0e8d48603360d">Слушать</a>
 """
 
 @router.message(F.text.in_(["🎵 Плейлисты", "Плейлисты", "плейлисты"]))
