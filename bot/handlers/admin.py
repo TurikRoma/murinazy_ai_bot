@@ -23,7 +23,8 @@ from bot.requests.stats_requests import (
 router = Router()
 
 def is_admin(message: Message) -> bool:
-    return message.from_user.id == settings.ADMIN_ID
+    admin_ids = [int(i.strip()) for i in settings.ADMIN_ID.split(',')]
+    return message.from_user.id in admin_ids
 
 @router.message(Command("generate"), is_admin)
 async def generate_workout_command(

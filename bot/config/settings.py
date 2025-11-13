@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     PROXY_API_URL: str
     PROXY_API_KEY: str
     
-    ADMIN_ID: int = 970281922
+    ADMIN_ID: str
 
     # App Settings
     WORKOUT_COOLDOWN_HOURS: int = 12
