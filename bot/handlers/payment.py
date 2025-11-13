@@ -15,6 +15,7 @@ from bot.config.settings import settings
 from bot.requests.user_requests import get_user_by_telegram_id
 from bot.requests.workout_requests import get_next_workout_for_user
 from bot.requests import subscription_requests
+from bot.requests.payment_requests import create_payment
 from bot.services.subscription_service import subscription_service
 from bot.services.workout_service import WorkoutService
 from bot.keyboards.payment import get_payment_keyboard
@@ -84,6 +85,9 @@ async def successful_payment_handler(
             f"User not found for successful payment. Telegram ID: {telegram_id}"
         )
         return
+
+    # 0. Сохраняем информацию о платеже
+    await create_payment(session, user)
 
     # 1. Проверим статус подписки ДО активации, чтобы выбрать правильный текст
     was_active = False

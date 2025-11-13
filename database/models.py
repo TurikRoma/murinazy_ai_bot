@@ -75,6 +75,13 @@ class WorkoutScheduleDayEnum(str, enum.Enum):
     воскресенье = "воскресенье"
 
 
+class SubscriptionStatusEnum(str, enum.Enum):
+    trial = "trial"
+    trial_expired = "trial_expired"
+    active = "active"
+    expired = "expired"
+
+
 class User(Base, TimestampMixin):
     __tablename__ = "users"
 
@@ -112,6 +119,7 @@ class User(Base, TimestampMixin):
     messages: Mapped[List["UserMessage"]] = relationship(
         "UserMessage", back_populates="user", cascade="all, delete-orphan"
     )
+    payments: Mapped[List["Payment"]] = relationship("Payment", back_populates="user")
 
 
 class UserMessage(Base, TimestampMixin):
@@ -197,9 +205,9 @@ class Subscription(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    status: Mapped[str] = mapped_column(
-        String, default="trial"
-    )  # Enum: trial, trial_expired, active, expired
+    status: Mapped[SubscriptionStatusEnum] = mapped_column(
+        Enum(SubscriptionStatusEnum), default=SubscriptionStatusEnum.trial, server_default="trial"
+    )
     trial_workouts_used: Mapped[int] = mapped_column(Integer, default=0)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -209,4 +217,13 @@ class Subscription(Base):
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="subscription") 
+    user: Mapped["User"] = relationship("User", back_populates="subscription")
+
+
+class Payment(Base, TimestampMixin):
+    __tablename__ = "payments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    user: Mapped["User"] = relationship("User", back_populates="payments") 

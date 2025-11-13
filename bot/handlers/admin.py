@@ -12,6 +12,12 @@ from bot.handlers.workout import format_workout_message, get_start_workout_keybo
 from bot.services.subscription_service import subscription_service
 from datetime import datetime, timedelta
 from database.models import WorkoutStatusEnum
+from bot.requests.stats_requests import (
+    get_rank_distribution,
+    get_subscription_status_distribution,
+    get_total_user_count,
+    get_total_payments_count,
+)
 
 
 router = Router()
@@ -159,3 +165,64 @@ async def refund_command(message: Message):
     except Exception as e:
         logging.error(f"Refund failed for transaction {telegram_payment_charge_id}: {e}")
         await message.answer(f"❌ Произошла ошибка при возврате: {e}")
+
+
+@router.message(Command("stats"), is_admin)
+async def get_stats_command(message: Message, session: AsyncSession):
+    """
+    Отображает статистику по званиям и статусам подписок пользователей.
+    """
+    try:
+        # Общее количество пользователей
+        total_users = await get_total_user_count(session)
+        
+        # Статистика по званиям
+        rank_stats = await get_rank_distribution(session)
+        stats_text = f"<b>📊 Общая статистика</b>\n"
+        stats_text += f"<b>Всего пользователей:</b> {total_users}\n\n"
+        
+        stats_text += "<b>🏆 Статистика по званиям:</b>\n"
+        if rank_stats:
+            total_ranked_users = sum(count for _, count in rank_stats)
+            for rank_name, count in rank_stats:
+                stats_text += f"▪️ {rank_name}: {count}\n"
+        else:
+            stats_text += "Нет данных.\n"
+
+        # Статистика по подпискам
+        subscription_stats = await get_subscription_status_distribution(session)
+        total_payments = await get_total_payments_count(session)
+        stats_text += "\n<b>📊 Подписки:</b>\n"
+        stats_text += f"<b>Всего покупок за все время:</b> {total_payments}\n На текущий момент:\n\n"
+        if subscription_stats:
+            total_subscriptions = 0
+            paid_users = 0
+            free_users = 0
+            
+            status_map = {
+                'active': '✅ Активные (Люди с подпиской)',
+                'trial': '⏳ Пробные',
+                'expired': '❌ Истекли (Люди у которых была подписка, но она истекла)',
+                'trial_expired': '🚫 Пробные истекли(Неактивные пользователи)'
+            }
+
+            for status, count in subscription_stats:
+                status_name = status_map.get(status.value, status.value.capitalize())
+                stats_text += f"▪️ {status_name}: {count}\n"
+                total_subscriptions += count
+                if status.value == 'active':
+                    paid_users = count
+                elif status.value == 'trial':
+                    free_users = count
+            
+            stats_text += f"\n<b>Итог:</b>\n"
+            stats_text += f"<b>💳 Платные:</b> {paid_users}\n"
+            stats_text += f"<b>🆓 Бесплатные (триал):</b> {free_users}\n"
+        else:
+            stats_text += "Нет данных."
+        
+        await message.answer(stats_text, parse_mode="HTML")
+
+    except Exception as e:
+        logging.error(f"Error in /stats command: {e}", exc_info=True)
+        await message.answer("❌ Произошла ошибка при получении статистики.")
