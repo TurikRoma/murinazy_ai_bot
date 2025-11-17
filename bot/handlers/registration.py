@@ -372,9 +372,11 @@ async def confirm_registration(
         if is_new_user and user:
             await subscription_requests.create_subscription(session, user.id)
 
-        # Сохраняем расписание, если оно было настроено
-        workout_schedule = user_data_dict.get("workout_schedule")
-        if user and workout_schedule:
+        # Сохраняем расписание, если оно было настроено.
+        # Эта функция вызывается всегда: она удалит старое расписание,
+        # а новое создаст только если workout_schedule не None.
+        if user:
+            workout_schedule = user_data_dict.get("workout_schedule")
             await create_or_update_user_schedule(
                 session=session,
                 user_id=user.id,
