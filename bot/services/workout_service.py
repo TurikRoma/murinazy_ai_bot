@@ -50,6 +50,7 @@ class WorkoutService:
 
         # --- Логика сброса цикла при изменении настроек или неполной неделе ---
         current_week = user.current_training_week or 0
+        force_new_cycle_generation = False
         if current_week > 0:
             force_new_cycle = False
             reason_message = ""
@@ -81,7 +82,11 @@ class WorkoutService:
                 #     f"ℹ️ Я заметил, что {reason_message}. "
                 #     "Чтобы программа была максимально сбалансированной, я начинаю для вас новый тренировочный цикл!"
                 # )
-                await user_requests.increment_user_training_week(session, user.id, week_to_set=1)
+                user = await user_requests.increment_user_training_week(session, user.id, week_to_set=1)
+                if not user:
+                    logging.error(f"User with id {user.id} disappeared during training week update. Aborting.")
+                    return None
+                force_new_cycle_generation = True
         
         # Обновляем неделю пользователя для генерации
         next_week = (user.current_training_week or 0) + 1
@@ -90,6 +95,10 @@ class WorkoutService:
         effective_week = calculate_effective_training_week(
             next_week, user.fitness_level.value
         )
+
+        # Если мы принудительно начали новый цикл, то и генерировать должны для первой недели.
+        if force_new_cycle_generation:
+            effective_week = 1
 
         # 2. Генерация плана через LLM с retry-логикой
         plan = None
