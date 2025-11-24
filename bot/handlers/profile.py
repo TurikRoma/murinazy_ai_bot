@@ -145,11 +145,12 @@ def format_full_profile_text(
     
     if subscription:
         if subscription.status == "trial":
-            # Лимит триала = 3 тренировки
-            remaining_workouts = 3 - (subscription.trial_workouts_used or 0)
+            # Лимит триала = 1 тренировка
+            remaining_workouts = 1 - (subscription.trial_workouts_used or 0)
+            workout_word = "тренировка" if remaining_workouts == 1 else "тренировок"
             profile_text += (
                 f"<b>Статус:</b> Пробный период "
-                f"({max(0, remaining_workouts)} бесплатных тренировок осталось)\n"
+                f"({max(0, remaining_workouts)} бесплатная {workout_word} осталась)\n"
             )
         elif subscription.status == "active":
             expires_str = subscription.expires_at.strftime("%d.%m.%Y")

@@ -110,7 +110,7 @@ async def get_exhausted_trial_subscriptions(session: AsyncSession) -> list[Subsc
         .join(Subscription.user)
         .where(
             Subscription.status == "trial",
-            Subscription.trial_workouts_used >= User.workout_frequency
+            Subscription.trial_workouts_used >= 1
         )
     )
     result = await session.execute(stmt)
