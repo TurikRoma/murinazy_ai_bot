@@ -5,14 +5,21 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.enums import ContentType
 
 from bot.keyboards.registration import get_start_keyboard, get_gender_keyboard
+from bot.keyboards.subscription import get_subscription_keyboard
 from bot.states.registration import RegistrationStates
 from bot.config.settings import settings
+from bot.utils.subscription import check_user_subscription
 import asyncio
 
 router = Router()
 
 # ID видео-кружка для приветствия
 WELCOME_VIDEO_NOTE_ID = "DQACAgIAAxkBAAIOU2kF3OKOFqll-EtxVsOKkqt6XGjfAAKrhQACXxYxSDiHASUpgYf2NgQ"
+
+REQUIRED_CHANNELS = [
+    {"username": "@murinzy", "link": "https://t.me/murinzy", "name": "Murinzy"},
+    {"username": "@valutabonus", "link": "https://t.me/valutabonus", "name": "VALUTA BONUS"},
+]
 
 
 async def start_registration_process(query: CallbackQuery, state: FSMContext):
@@ -27,13 +34,10 @@ async def start_registration_process(query: CallbackQuery, state: FSMContext):
     await query.answer()
 
 
-@router.message(CommandStart())
-async def command_start(message: Message, state: FSMContext):
+async def send_welcome_message(message: Message):
     """
-    Обработчик команды /start.
-    Отправляет приветственное сообщение и кнопку 'Начать'.
+    Отправляет приветственное сообщение и видео-кружок.
     """
-    await state.clear()
     await message.answer(
         """🔥 Привет, машина! Я — Murinzy AI, твой новый тренер.
 Здесь ты получишь всё, чтобы реально прогрессировать и построить тело своей мечты 💪
@@ -49,6 +53,55 @@ async def command_start(message: Message, state: FSMContext):
     )
     await asyncio.sleep(1)
     await message.answer_video_note(WELCOME_VIDEO_NOTE_ID, reply_markup=get_start_keyboard())
+
+
+@router.message(CommandStart())
+async def command_start(message: Message, state: FSMContext):
+    """
+    Обработчик команды /start.
+    Проверяет подписку на каналы. Если подписки нет — просит подписаться.
+    Если есть — отправляет приветственное сообщение.
+    """
+    await state.clear()
+    
+    # Проверка подписки
+    is_subscribed, missing_channels = await check_user_subscription(
+        message.from_user.id, 
+        message.bot, 
+        REQUIRED_CHANNELS
+    )
+
+    if not is_subscribed:
+        await message.answer(
+            "Чтобы получить доступ к AI-тренеру и планам тренировок, подпишись на наши ресурсы:",
+            reply_markup=get_subscription_keyboard(REQUIRED_CHANNELS)
+        )
+        return
+
+    await send_welcome_message(message)
+
+
+@router.callback_query(F.data == "check_subscription")
+async def check_subscription_callback(query: CallbackQuery):
+    """
+    Обработка кнопки "Я подписался".
+    """
+    is_subscribed, missing_channels = await check_user_subscription(
+        query.from_user.id,
+        query.bot,
+        REQUIRED_CHANNELS
+    )
+
+    if is_subscribed:
+        await query.message.delete()
+        await send_welcome_message(query.message)
+    else:
+        channels_str = ", ".join(missing_channels)
+        await query.answer(
+            f"❌ Вы не подписаны на: {channels_str}\nПодпишитесь, чтобы продолжить!",
+            show_alert=True
+        )
+
 
 @router.callback_query(F.data == "start_registration")
 async def start_registration_callback(query: CallbackQuery, state: FSMContext):
