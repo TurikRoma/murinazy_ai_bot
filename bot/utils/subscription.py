@@ -13,6 +13,10 @@ async def check_user_subscription(user_id: int, bot: Bot, channels: list[dict]) 
     missing_channels = []
     
     for channel in channels:
+        # Если проверка для канала отключена, пропускаем его
+        if not channel.get('check_required', True):
+            continue
+
         chat_id = channel.get('username') or channel.get('id')
         try:
             member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
