@@ -16,13 +16,15 @@ async def check_user_available(
 ) -> bool:
     """
     Проверяет, может ли бот отправить сообщение пользователю (не заблокирован ли бот).
+    Использует send_chat_action для легкой проверки доступности.
     Если пользователь заблокировал бота, устанавливает статус подписки в trial_expired.
     
     Returns:
         True если пользователь доступен, False если заблокировал бота
     """
     try:
-        await bot.get_chat(chat_id=chat_id)
+        # Используем send_chat_action для легкой проверки - это не отправляет сообщение пользователю
+        await bot.send_chat_action(chat_id=chat_id, action="typing")
         return True
     except TelegramForbiddenError:
         logging.warning(f"User {chat_id} blocked the bot. Setting subscription status to trial_expired.")

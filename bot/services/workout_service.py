@@ -337,11 +337,7 @@ async def scheduled_weekly_workout_generation(
                         )
                         continue
 
-                    logging.info(
-                        f"Generating weekly workout for user_id: {user.id} (telegram_id: {user.telegram_id})"
-                    )
-
-                    # Проверяем, не заблокировал ли пользователь бота
+                    # Проверяем, не заблокировал ли пользователь бота (ПЕРЕД генерацией)
                     if not await check_user_available(bot, user_session, user.telegram_id):
                         logging.info(
                             f"User {user.telegram_id} blocked the bot. Skipping workout generation."
@@ -356,6 +352,10 @@ async def scheduled_weekly_workout_generation(
                             f"User {user.telegram_id} cannot receive workout due to subscription status. Skipping."
                         )
                         continue
+
+                    logging.info(
+                        f"Generating weekly workout for user_id: {user.id} (telegram_id: {user.telegram_id})"
+                    )
 
                     result = await workout_service.create_and_schedule_weekly_workout(
                         user_session, user.telegram_id
@@ -436,14 +436,10 @@ async def check_and_generate_missed_workouts(
                         last_workout_date is None
                         or last_workout_date.replace(tzinfo=None) < last_sunday_22_00_utc.replace(tzinfo=None)
                     ):
-                        logging.info(
-                            f"User {user.telegram_id} missed workout generation. Last one was at {last_workout_date}. Generating now."
-                        )
-
-                        # Проверяем, не заблокировал ли пользователь бота
+                        # Проверяем, не заблокировал ли пользователь бота (ПЕРЕД генерацией)
                         if not await check_user_available(bot, user_session, user.telegram_id):
                             logging.info(
-                                f"User {user.telegram_id} blocked the bot. Skipping workout generation."
+                                f"User {user.telegram_id} blocked the bot. Skipping missed workout generation."
                             )
                             continue
 
@@ -455,6 +451,10 @@ async def check_and_generate_missed_workouts(
                                 f"User {user.telegram_id} cannot receive workout due to subscription status. Skipping."
                             )
                             continue
+
+                        logging.info(
+                            f"User {user.telegram_id} missed workout generation. Last one was at {last_workout_date}. Generating now."
+                        )
 
                         result = (
                             await workout_service.create_and_schedule_weekly_workout(
