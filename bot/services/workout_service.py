@@ -314,13 +314,13 @@ async def scheduled_weekly_workout_generation(
     bot: Bot, session_pool: async_sessionmaker, workout_service: WorkoutService
 ):
     """
-    Запускает еженедельную генерацию тренировок для всех пользователей с расписанием.
+    Запускает еженедельную генерацию тренировок для всех пользователей, которым нужны тренировки.
     """
     logging.info("Starting scheduled weekly workout generation for all users.")
     async with session_pool() as session:
-        users = await user_requests.get_users_with_schedule(session)
+        users = await user_requests.get_users_for_workout_generation(session)
         logging.info(
-            f"Found {len(users)} users with schedules for weekly generation."
+            f"Found {len(users)} users for weekly generation."
         )
 
         for user in users:
@@ -393,12 +393,12 @@ async def check_and_generate_missed_workouts(
     """
     logging.info("Checking for users with missed weekly workouts...")
     async with session_pool() as session:
-        users = await user_requests.get_users_with_schedule(session)
+        users = await user_requests.get_users_for_workout_generation(session)
         # Фильтруем только пользователя с ID=3
         users = [u for u in users if u.id == 3]
         if not users:
             logging.info(
-                "No users with schedules found. Skipping missed workout check."
+                "No users found for workout generation. Skipping missed workout check."
             )
             return
 

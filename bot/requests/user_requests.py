@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
+from datetime import datetime
 
-from database.models import User, WorkoutSchedule
+from database.models import User, WorkoutSchedule, Subscription, SubscriptionStatusEnum
 from bot.schemas.user import UserRegistrationSchema
 from bot.utils.rank_utils import get_rank_by_score
 
@@ -81,3 +82,49 @@ async def get_users_with_schedule(session: AsyncSession) -> list[User]:
     stmt = select(User).join(User.workout_schedules).distinct()
     result = await session.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_users_for_workout_generation(session: AsyncSession) -> list[User]:
+    """
+    Получает всех пользователей, которым нужны тренировки:
+    - Пользователи с расписанием (workout_schedules)
+    - ИЛИ пользователи с активной подпиской (active или trial)
+    """
+    # Получаем пользователей с расписанием
+    users_with_schedule = await get_users_with_schedule(session)
+    
+    # Получаем пользователей с активной подпиской
+    now = datetime.now()
+    stmt = (
+        select(User)
+        .join(Subscription, User.id == Subscription.user_id)
+        .where(
+            or_(
+                # Активная подписка (не истекла)
+                and_(
+                    Subscription.status == SubscriptionStatusEnum.active,
+                    or_(
+                        Subscription.expires_at.is_(None),
+                        Subscription.expires_at > now
+                    )
+                ),
+                # Триальная подписка (есть доступные тренировки)
+                and_(
+                    Subscription.status == SubscriptionStatusEnum.trial,
+                    User.workout_frequency.isnot(None),
+                    User.workout_frequency > 0,
+                    Subscription.trial_workouts_used < User.workout_frequency
+                )
+            )
+        )
+    )
+    result = await session.execute(stmt)
+    users_with_subscription = list(result.scalars().all())
+    
+    # Объединяем списки, убирая дубликаты
+    all_users = {user.id: user for user in users_with_schedule}
+    for user in users_with_subscription:
+        if user.id not in all_users:
+            all_users[user.id] = user
+    
+    return list(all_users.values())
