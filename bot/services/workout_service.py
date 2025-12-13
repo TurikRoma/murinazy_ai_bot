@@ -20,7 +20,7 @@ from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
 from bot.utils.workout_utils import calculate_effective_training_week
 from bot.services.subscription_service import subscription_service
-from bot.utils.bot_messages import safe_send_message
+from bot.utils.bot_messages import safe_send_message, check_user_available
 from zoneinfo import ZoneInfo
 
 
@@ -341,6 +341,13 @@ async def scheduled_weekly_workout_generation(
                         f"Generating weekly workout for user_id: {user.id} (telegram_id: {user.telegram_id})"
                     )
 
+                    # Проверяем, не заблокировал ли пользователь бота
+                    if not await check_user_available(bot, user_session, user.telegram_id):
+                        logging.info(
+                            f"User {user.telegram_id} blocked the bot. Skipping workout generation."
+                        )
+                        continue
+
                     can_receive = await subscription_service.can_receive_workout(
                         user_session, user
                     )
@@ -432,6 +439,13 @@ async def check_and_generate_missed_workouts(
                         logging.info(
                             f"User {user.telegram_id} missed workout generation. Last one was at {last_workout_date}. Generating now."
                         )
+
+                        # Проверяем, не заблокировал ли пользователь бота
+                        if not await check_user_available(bot, user_session, user.telegram_id):
+                            logging.info(
+                                f"User {user.telegram_id} blocked the bot. Skipping workout generation."
+                            )
+                            continue
 
                         can_receive = await subscription_service.can_receive_workout(
                             user_session, user
