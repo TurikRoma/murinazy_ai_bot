@@ -395,7 +395,6 @@ async def check_and_generate_missed_workouts(
     async with session_pool() as session:
         users = await user_requests.get_users_for_workout_generation(session)
         # Фильтруем только пользователя с ID=3
-        users = [u for u in users if u.id == 3]
         if not users:
             logging.info(
                 "No users found for workout generation. Skipping missed workout check."
