@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_
 from datetime import datetime
 
-from database.models import User, WorkoutSchedule, Subscription, SubscriptionStatusEnum
+from database.models import User, WorkoutSchedule, Subscription
 from bot.schemas.user import UserRegistrationSchema
 from bot.utils.rank_utils import get_rank_by_score
 
@@ -102,7 +102,7 @@ async def get_users_for_workout_generation(session: AsyncSession) -> list[User]:
             or_(
                 # Активная подписка (не истекла)
                 and_(
-                    Subscription.status == SubscriptionStatusEnum.active,
+                    Subscription.status == "active",
                     or_(
                         Subscription.expires_at.is_(None),
                         Subscription.expires_at > now
@@ -110,7 +110,7 @@ async def get_users_for_workout_generation(session: AsyncSession) -> list[User]:
                 ),
                 # Триальная подписка (есть доступные тренировки)
                 and_(
-                    Subscription.status == SubscriptionStatusEnum.trial,
+                    Subscription.status == "trial",
                     User.workout_frequency.isnot(None),
                     User.workout_frequency > 0,
                     Subscription.trial_workouts_used < User.workout_frequency
