@@ -20,6 +20,7 @@ from bot.services.llm_service import llm_service
 from bot.schemas.workout import PlanSummary
 from bot.utils.workout_utils import calculate_effective_training_week
 from bot.services.subscription_service import subscription_service
+from bot.utils.bot_messages import safe_send_message
 from zoneinfo import ZoneInfo
 
 
@@ -363,7 +364,9 @@ async def scheduled_weekly_workout_generation(
                             if next_workout
                             else "на следующей неделе"
                         )
-                        await bot.send_message(
+                        await safe_send_message(
+                            bot,
+                            user_session,
                             user.telegram_id,
                             f"✅ Ваша новая тренировка на неделю сгенерирована!\n\n"
                             f"Ближайшая тренировка ждет вас {next_date_str}.",
@@ -445,7 +448,9 @@ async def check_and_generate_missed_workouts(
                             )
                         )
                         if result:
-                            await bot.send_message(
+                            await safe_send_message(
+                                bot,
+                                user_session,
                                 user.telegram_id,
                                 "ℹ️ Мы заметили, что ваша тренировка на этой неделе не была создана. "
                                 "Мы все исправили, новый план уже готов!",

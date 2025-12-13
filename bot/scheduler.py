@@ -22,6 +22,7 @@ from bot.services.workout_service import (
     WorkoutService,
     scheduled_weekly_workout_generation,
 )
+from bot.utils.bot_messages import safe_send_message
 
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 logger = logging.getLogger(__name__)
@@ -56,7 +57,9 @@ async def send_workout_notification(
             f"Не забудьте сделать разминку перед началом."
         )
 
-        await bot.send_message(
+        await safe_send_message(
+            bot,
+            session,
             user_id,
             message,
             reply_markup=get_start_workout_keyboard(workout_id),
@@ -112,14 +115,13 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
         for sub in expired_paid:
             logging.info(f"Subscription for user {sub.user_id} has expired. Updating status to 'expired'.")
             await subscription_requests.update_subscription_status(session, sub.id, "expired")
-            try:
-                await bot.send_message(
-                    chat_id=sub.user.telegram_id,
-                    text="ℹ️ Ваша подписка истекла. Чтобы продолжать получать тренировки, пожалуйста, оформите новую.",
-                    reply_markup=get_payment_keyboard()
-                )
-            except Exception as e:
-                logging.error(f"Failed to send expiration notification to user {sub.user_id}: {e}")
+            await safe_send_message(
+                bot,
+                session,
+                sub.user.telegram_id,
+                "ℹ️ Ваша подписка истекла. Чтобы продолжать получать тренировки, пожалуйста, оформите новую.",
+                reply_markup=get_payment_keyboard()
+            )
 
         # 2. Обработка триальных подписок, у которых закончились тренировки
         exhausted_trials = await subscription_requests.get_exhausted_trial_subscriptions(session)
@@ -127,14 +129,13 @@ async def check_expired_subscriptions(bot: Bot, session_pool: async_sessionmaker
             logging.info(f"Trial for user {sub.user_id} has expired. Updating status to 'trial_expired'.")
             # Меняем статус, чтобы уведомление не отправлялось повторно
             await subscription_requests.update_subscription_status(session, sub.id, "trial_expired")
-            try:
-                await bot.send_message(
-                    chat_id=sub.user.telegram_id,
-                    text="👋 Ваш пробный период завершен. Чтобы получать следующие   тренировки, оформите подписку.",
-                    reply_markup=get_payment_keyboard()
-                )
-            except Exception as e:
-                logging.error(f"Failed to send trial expiration notification to user {sub.user_id}: {e}")
+            await safe_send_message(
+                bot,
+                session,
+                sub.user.telegram_id,
+                "👋 Ваш пробный период завершен. Чтобы получать следующие   тренировки, оформите подписку.",
+                reply_markup=get_payment_keyboard()
+            )
 
 
 def setup_scheduler(bot: Bot, session_pool: async_sessionmaker, workout_service: WorkoutService):
