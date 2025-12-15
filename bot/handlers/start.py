@@ -17,8 +17,8 @@ router = Router()
 WELCOME_VIDEO_NOTE_ID = "DQACAgIAAxkBAAIOU2kF3OKOFqll-EtxVsOKkqt6XGjfAAKrhQACXxYxSDiHASUpgYf2NgQ"
 
 REQUIRED_CHANNELS = [
+    {"username": "@murinzy", "link": "https://t.me/murinzy", "name": "Murinzy"},
     {"username": "@valutabonus", "link": "https://t.me/valutabonus", "name": "VALUTA BONUS"},
-    {"username": "@TTDiceBot", "link": "https://t.me/TTDiceBot", "name": "Dice Bot", "check_required": False},
 ]
 
 
