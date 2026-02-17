@@ -9,6 +9,7 @@ import os
 from bot.config.settings import settings
 
 # --- НАСТРОЙКИ ---
+asdsada
 # Замените на ваши реальные данные
 # Если вы используете переменные окружения, как в вашем примере с settings,
 # оставьте вашу логику (from bot.config.settings import settings)
