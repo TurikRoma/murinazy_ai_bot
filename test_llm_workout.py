@@ -3,6 +3,7 @@
 с использованием "Мастер-Промпта v2.1" и вложенной структуры упражнений.
 """
 fa
+whatafa
 import asyncio
 import json
 from openai import AsyncOpenAI
