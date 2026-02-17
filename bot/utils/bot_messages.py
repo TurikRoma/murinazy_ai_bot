@@ -70,3 +70,4 @@ async def safe_send_message(
             logging.error(f"Failed to update subscription status for user {chat_id}: {db_error}", exc_info=True)
     except Exception as e:
         logging.error(f"Error when sending message to {chat_id}: {e}", exc_info=True)
+
