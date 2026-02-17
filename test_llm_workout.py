@@ -15,7 +15,7 @@ asdsada
 # оставьте вашу логику (from bot.config.settings import settings)
 PROXY_API_KEY = settings.PROXY_API_KEY  # <-- ВАШ КЛЮЧ
 PROXY_API_URL = settings.PROXY_API_URL  # <-- ВАШ URL
-
+asdads
 # --- ДАННЫЕ ДЛЯ ТЕСТИРОВАНИЯ ---
 # Меняйте эти данные, чтобы тестировать разные сценарии
 
