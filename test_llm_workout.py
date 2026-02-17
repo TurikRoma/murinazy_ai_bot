@@ -18,9 +18,9 @@ PROXY_API_URL = settings.PROXY_API_URL  # <-- ВАШ URL
 asdads
 # --- ДАННЫЕ ДЛЯ ТЕСТИРОВАНИЯ ---
 # Меняйте эти данные, чтобы тестировать разные сценарии
-
+sadas
 TEST_USER_PROFILE = {
-    "gender": "male",
+    "gender": "male",a
     "age": 23,
     "height": 180,
     "current_weight": 80.5,
