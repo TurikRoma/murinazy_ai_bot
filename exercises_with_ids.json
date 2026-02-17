@@ -1,0 +1,620 @@
+[
+  {
+    "name": "Молотки",
+    "file_id": "BAACAgIAAxkDAAIGtWkCFGLLOpuh85Hg-v0WeC5Cg9SEAAIQjAACulUQSFOUwpVFsk6XNgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Подъём EZ-штанги на бицепс стоя",
+    "file_id": "BAACAgIAAxkDAAIGtmkCFGRLjw8_id_z7f7W4YauI02_AAIRjAACulUQSMQzr2sU0t3dNgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "подъём на бицепс гантели на скамье скотта",
+    "file_id": "BAACAgIAAxkDAAIGt2kCFGfW2DlizeJ24zox1xk-E1trAAISjAACulUQSEw1AAErRdAAAec2BA",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Подъём штанги на бицепс стоя",
+    "file_id": "CgACAgIAAxkDAAIGuGkCFGnBRVP0zH2jsOJfmpgagilFAAITjAACulUQSPPSLZn98DXPNgQ",
+    "muscle_group": "Бицепс",
+    "type": "gif"
+  },
+  {
+    "name": "Подъем EZ штанги на скамье Скотта",
+    "file_id": "CgACAgIAAxkDAAIGuWkCFG1IQun_qXG_G_DgqulSjWDmAAIUjAACulUQSE3w-LrIeSu_NgQ",
+    "muscle_group": "Бицепс",
+    "type": "gif"
+  },
+  {
+    "name": "Подъем гантелей на бицепс стоя",
+    "file_id": "BAACAgIAAxkDAAIGumkCFHBeedNlZlElA-zl55yIHu05AAIVjAACulUQSBXgPxqnnBSTNgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Подъем штанги обратным хватом",
+    "file_id": "BAACAgIAAxkDAAIGu2kCFHJpT-gVU_EWPeAP-cIRs3vUAAIWjAACulUQSJ2Rcs3nLus5NgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Сгибание рук на бицепс с гантелями сидя",
+    "file_id": "BAACAgIAAxkDAAIGvGkCFHUYYmUq2-AKFSTlBPsNUct4AAIXjAACulUQSJb32VTz4dPwNgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Сгибание рук сидя",
+    "file_id": "CgACAgIAAxkDAAIGvWkCFHtAl3MzXxz2dxfMChfc_WYGAAIYjAACulUQSDLwZWDoXiVZNgQ",
+    "muscle_group": "Бицепс",
+    "type": "gif"
+  },
+  {
+    "name": "Сгибание рук сидя",
+    "file_id": "BAACAgIAAxkDAAIGvmkCFH-sCrDohkl05ZpNp_BOKr9LAAIZjAACulUQSMwIRvq-fOXxNgQ",
+    "muscle_group": "Бицепс",
+    "type": "video"
+  },
+  {
+    "name": "Жим гантелей лежа",
+    "file_id": "BAACAgIAAxkDAAIGv2kCFIIiTcguZf1vOJQCB7gERU4wAAIajAACulUQSCexVhO3BIcXNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Жим гантелей на наклонной скамье",
+    "file_id": "BAACAgIAAxkDAAIGwGkCFIYdq1iWGodngCe6GbKUT43fAAIbjAACulUQSD1pj3V6WaLCNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Жим гантелей на наклонной скамье обратный хват",
+    "file_id": "BAACAgIAAxkDAAIGwWkCFInEJqK7QBXo2aoBAwIlj8rBAAIdjAACulUQSFl-Bc6-Jb7NNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Жим лежа",
+    "file_id": "BAACAgIAAxkDAAIGwmkCFIvdLgOhi0BoXnyjR_8Fsmx-AAIejAACulUQSIc7cM0TVyF2NgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Жим штанги на наклонной скамье вверх",
+    "file_id": "BAACAgIAAxkDAAIGw2kCFI4atG8GENMzL8vYPa35uS56AAIfjAACulUQSAkXmduahWBfNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания ''арчер''",
+    "file_id": "BAACAgIAAxkDAAIGxGkCFJCzTccKeCiFxCMqAAGxtmqVLwACIIwAArpVEEgTOmQyi9ZI9DYE",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания алмазные",
+    "file_id": "BAACAgIAAxkDAAIGxWkCFJLncHhYv286y7WngwJQVewMAAIhjAACulUQSOW_beIpNmGdNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания классические",
+    "file_id": "BAACAgIAAxkDAAIGxmkCFJfH0Oq6VlEOLMvxAVEbt8jhAAIjjAACulUQSJmDiaivbthMNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания на брусьях",
+    "file_id": "BAACAgIAAxkDAAIGx2kCFJnUf3O07NhRN7cO_rwD9FH3AAIkjAACulUQSEZWZAf_Own9NgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания с касанием плеча",
+    "file_id": "BAACAgIAAxkDAAIGyGkCFJsdyL8XeU2qZv_-duagyVPkAAIljAACulUQSKTVX4NYFJulNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания с колен",
+    "file_id": "BAACAgIAAxkDAAIGyWkCFJw7tiI8mKHxJGGHXp37cGjwAAImjAACulUQSGO20kRmaUvJNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания с ногами на лавочке",
+    "file_id": "BAACAgIAAxkDAAIGymkCFJ38nusdIccw-l4QUNwNhxmXAAInjAACulUQSMWriAGInveUNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания с упором на лавочку",
+    "file_id": "BAACAgIAAxkDAAIGy2kCFJ62Jklcr4GiTlc7NkRvy6xAAAIpjAACulUQSBH1s_tHmes_NgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания с хлопком",
+    "file_id": "BAACAgIAAxkDAAIGzGkCFKB5-L3oetPDePecusqYaODvAAIqjAACulUQSEZZDhggsDS6NgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания спайдермена",
+    "file_id": "BAACAgIAAxkDAAIGzWkCFKFp0PMryH1_kR9ippT5l_TYAAIrjAACulUQSLcLsRAP2ZSkNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания узким хватом",
+    "file_id": "BAACAgIAAxkDAAIGzmkCFKIVJhqSTrb7wVHfZpnwPZOIAAIsjAACulUQSFQdR3uaSdniNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Отжимания широким хватом",
+    "file_id": "BAACAgIAAxkDAAIGz2kCFKTyDjiXKKByjh45CPIS89h9AAItjAACulUQSAUIO4lAY-2hNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Пуловер с гантелей",
+    "file_id": "BAACAgIAAxkDAAIG0GkCFKed2Zj239RXtTMYT8T4US_wAAIujAACulUQSDv4cZejc0CENgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Разводка в тренажёре «бабочка»",
+    "file_id": "BAACAgIAAxkDAAIG0WkCFKsmu0_rvUQwsx5SdHlnaywyAAIvjAACulUQSKGdl0eiAAFmEDYE",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Разводка гантелей лежа",
+    "file_id": "BAACAgIAAxkDAAIG0mkCFK1IGLMa7H_h23gj34mTBICgAAIwjAACulUQSDYKDZWL6VBTNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Разводка гантелей на наклонной скамье",
+    "file_id": "BAACAgIAAxkDAAIG02kCFLDKZb8dlwoBxQmGIlqOpQboAAIxjAACulUQSGcwKZ99YuwfNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Сведение рук в кроссовере (верхний блок)",
+    "file_id": "BAACAgIAAxkDAAIG1GkCFLXPd_Cykx5-0ApGVYO4rUUvAAIyjAACulUQSH4pfm2Xrzy8NgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Сведение рук в кроссовере (нижний блок)",
+    "file_id": "BAACAgIAAxkDAAIG1WkCFLgGSwAB3BvQkpo9VU6yqyAoRAACM4wAArpVEEiMyibeaXTqJzYE",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Сведение рук в кроссовере (средний уровень)",
+    "file_id": "BAACAgIAAxkDAAIG1mkCFLrPrxBcJFlaEAhr9lF3XgdTAAI0jAACulUQSC1uASR3YsyvNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Сведение рук в кроссовере на наклонной скамье вверх",
+    "file_id": "BAACAgIAAxkDAAIG12kCFLvagLgqhvDeAZtydvI2K6HPAAI1jAACulUQSH1VtZVey9UnNgQ",
+    "muscle_group": "Грудь",
+    "type": "video"
+  },
+  {
+    "name": "Берпи",
+    "file_id": "BAACAgIAAxkDAAIG2GkCFL2S9FcVVj52Z6WrbT4qOlhzAAI2jAACulUQSKaGFApsOswVNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Болгарские выпады",
+    "file_id": "BAACAgIAAxkDAAIG2WkCFMHuqc3kSRIynzF11WpGHIHCAAI3jAACulUQSJnfqr3h8mRvNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Болгарские приседания",
+    "file_id": "BAACAgIAAxkDAAIG2mkCFMPusIomUnOZ5gSebY40nOCpAAI4jAACulUQSGTm0UdN7jfxNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Выпады вперед",
+    "file_id": "BAACAgIAAxkDAAIG22kCFMXyGf3byUtGDCmbEB-47Ww-AAI5jAACulUQSPrYo80gZBa-NgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Выпады назад",
+    "file_id": "BAACAgIAAxkDAAIG3GkCFMZGXCqQZmKwtBrwS3OBnBeCAAI6jAACulUQSBRCBjt-VnEINgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Гакк-приседания",
+    "file_id": "BAACAgIAAxkDAAIG3WkCFMwh86LhJOjLFTYaG7h8DXoGAAI8jAACulUQSC8nmt01zDycNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Жим ногами",
+    "file_id": "BAACAgIAAxkDAAIG3mkCFM_WTAABRsw6gQXPGUcFPpJQ0wACPYwAArpVEEjZd3J7vkTY5TYE",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Подъём на носки сидя(тренажер)",
+    "file_id": "BAACAgIAAxkDAAIG32kCFNFZvVP7ClKRIXjh9bYrlq9yAAI-jAACulUQSGEHxCJUIJ88NgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Подъём на носки сидя",
+    "file_id": "BAACAgIAAxkDAAIG4GkCFNNmAzj50ZYiWGCCSluWYp9eAAI_jAACulUQSNikv3Up7lpINgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Подъём на носки стоя(гантели)",
+    "file_id": "BAACAgIAAxkDAAIG4WkCFNS-v8nJcZ83RpSAq7eq5qhLAAJBjAACulUQSBThwN0jw4rYNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Подъём на носки стоя",
+    "file_id": "BAACAgIAAxkDAAIG4mkCFNbmBIpGVNFRd6RBKXiRlVNxAAJCjAACulUQSGx1XlauC_-8NgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Приседания классические",
+    "file_id": "BAACAgIAAxkDAAIG42kCFNcJ_CrC34P48JwWYwABTqnYpwACRIwAArpVEEjVP-48UXtV2jYE",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Приседания с гантелями",
+    "file_id": "BAACAgIAAxkDAAIG5GkCFNqd6IKXG6ik80PtmRJIAAFy5QACRYwAArpVEEiaMo6CxJnQ7jYE",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Приседания со штангой на спине",
+    "file_id": "BAACAgIAAxkDAAIG5WkCFNyIQnt4g2wxLiNIoALmgR7zAAJGjAACulUQSIPy4CLx9rtFNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Прыжковые приседания",
+    "file_id": "BAACAgIAAxkDAAIG5mkCFN1iSVbV2z_MH2fdqIq4itTYAAJHjAACulUQSOYqBxuoz0l6NgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Разгибания ног сидя",
+    "file_id": "BAACAgIAAxkDAAIG52kCFN53hLnfHLLS-eZMYhs5KQbpAAJIjAACulUQSFSfs4mKTHRJNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Румынская тяга",
+    "file_id": "BAACAgIAAxkDAAIG6GkCFOHa_oJXFxoWVASME2qs7Z7HAAJJjAACulUQSPB740t81S4UNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "становая тяга",
+    "file_id": "BAACAgIAAxkDAAIG6WkCFPAmWn9M2C3l_YqrkQTSGt4wAAJKjAACulUQSDbICuvl1PSZNgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Ягодичный мост",
+    "file_id": "BAACAgIAAxkDAAIG6mkCFPLCx3Fzz6jhSEGE7xo6k6o-AAJLjAACulUQSNy6kO6H25CONgQ",
+    "muscle_group": "Ноги",
+    "type": "video"
+  },
+  {
+    "name": "Жим Арнольда",
+    "file_id": "BAACAgIAAxkDAAIG62kCFPO8SnoJf_Cyfa5Tu9gh4aJxAAJMjAACulUQSNu0l68OVecAATYE",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Жим гантелей сидя",
+    "file_id": "BAACAgIAAxkDAAIG7GkCFPh0qDbF5D1DBx6gImZV1l2JAAJNjAACulUQSGDKsZFncl9hNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Жим гантелей стоя",
+    "file_id": "BAACAgIAAxkDAAIG7WkCFPqsXhVNWsCyeG2Far6bH0LbAAJPjAACulUQSGz3CDuJf3X2NgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Жим штанги стоя",
+    "file_id": "BAACAgIAAxkDAAIG7mkCFPsCICldBSzDE63yZm_1MJS4AAJQjAACulUQSOSEIve86nXBNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Махи на заднюю дельту с гантелями",
+    "file_id": "BAACAgIAAxkDAAIG72kCFPy7uclsqjXT25zc7woEzmO2AAJRjAACulUQSOFQ_XaDI3Z3NgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Обратная бабочка",
+    "file_id": "BAACAgIAAxkDAAIG8GkCFP6AXnaDGgtwLQfMbGWG92YEAAJTjAACulUQSHydaPz_Wr2vNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Отведение блока в сторону",
+    "file_id": "BAACAgIAAxkDAAIG8WkCFQGvL4dBc3Mi5h2UCk3-PSHxAAJVjAACulUQSCD11fEu1FRvNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Отведение гантелей в стороны",
+    "file_id": "BAACAgIAAxkDAAIG8mkCFQPOQwAB2zY88KziUCAVsFn2VQACVowAArpVEEhbNj9bN6jHcjYE",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Подъём гантелей перед собой",
+    "file_id": "BAACAgIAAxkDAAIG82kCFQZBHyVA_wopBrD0sypPQav2AAJYjAACulUQSArM0d8w-wYnNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Тяга каната ко лбу",
+    "file_id": "BAACAgIAAxkDAAIG9GkCFQjFzo1l02NxMpcURFiIntfdAAJZjAACulUQSJladSattvYAATYE",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Тяга штанги к подбородку",
+    "file_id": "BAACAgIAAxkDAAIG9WkCFQnGpunMu0PSMpxT04CPUJgTAAJajAACulUQSA6i_kkbfSOBNgQ",
+    "muscle_group": "Плечи",
+    "type": "video"
+  },
+  {
+    "name": "Боковая планка с подъемом корпуса",
+    "file_id": "CgACAgIAAxkDAAIG9mkCFQ0NGWD8Xj-v3Ql3-8AE1VpNAAJbjAACulUQSD3PgBD9_lnmNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Боковые наклоны",
+    "file_id": "CgACAgIAAxkDAAIG92kCFRHOIN8lP3THHd7EDCToMglWAAJcjAACulUQSA5VHbSh720kNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Боковые скручивания",
+    "file_id": "CgACAgIAAxkDAAIG-GkCFRPXuXPcJM2YXLbKQLgGMDrbAAJdjAACulUQSFbP9oEVHAt7NgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Велосипед",
+    "file_id": "BAACAgIAAxkDAAIG-WkCFRbCowmfZb2UIZXL3Zs1sEPpAAJejAACulUQSEn8TrzXrrDCNgQ",
+    "muscle_group": "Пресс",
+    "type": "video"
+  },
+  {
+    "name": "Двойные скручивания",
+    "file_id": "CgACAgIAAxkDAAIG-mkCFRf2k3_U4FUObaCymzuAJjY7AAJfjAACulUQSD_70hzag4ykNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Классические скручивания",
+    "file_id": "BAACAgIAAxkDAAIG-2kCFRkq-HmK7k1k7V8Bu8YJZ47RAAJhjAACulUQSFe5c22HNdPmNgQ",
+    "muscle_group": "Пресс",
+    "type": "video"
+  },
+  {
+    "name": "Косые скручивания к прямой ноге",
+    "file_id": "CgACAgIAAxkDAAIG_GkCFRwR_m-weXPjpcg_QCMlNXJKAAJijAACulUQSMoQdOm1-wABszYE",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Косые скручивания",
+    "file_id": "CgACAgIAAxkDAAIG_WkCFR5fIzVV4rmB56i9Ei_22hCXAAJjjAACulUQSPoPdk2LTAABwjYE",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Обратные скручивания",
+    "file_id": "BAACAgIAAxkDAAIG_mkCFR_vxOBj9ArowNYDgOfjJnYUAAJkjAACulUQSCgf2BxOApNuNgQ",
+    "muscle_group": "Пресс",
+    "type": "video"
+  },
+  {
+    "name": "Планка на локтях с разворотами",
+    "file_id": "CgACAgIAAxkDAAIG_2kCFSEtLopEz2XPE7TCv8jbER_EAAJljAACulUQSCgWq5ec6WBXNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Скручивания на тренажере",
+    "file_id": "BAACAgIAAxkDAAIHAAFpAhUzmKYfZ85yFCUzBae6wClLGAACaIwAArpVEEiWGoBFOa3JVTYE",
+    "muscle_group": "Пресс",
+    "type": "video"
+  },
+  {
+    "name": "Скручивания с гантелей",
+    "file_id": "BAACAgIAAxkDAAIHAWkCFTZwYDj30Ovg1pXOrojfuNXUAAJpjAACulUQSKM6pm80JWeqNgQ",
+    "muscle_group": "Пресс",
+    "type": "video"
+  },
+  {
+    "name": "Гиперэкстензия",
+    "file_id": "BAACAgIAAxkDAAIHAmkCFUJchAAB7PzwK0O0FJPdDT3k7wACaowAArpVEEh8n9qJxbFTuzYE",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Подтягивания классические",
+    "file_id": "BAACAgIAAxkDAAIHA2kCFURvawhd6SF1X1rII6r4rJzAAAJrjAACulUQSGCeudVGqD0SNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Подтягивания обратным хватом",
+    "file_id": "BAACAgIAAxkDAAIHBGkCFUabx1WjP42OAhQJlThXzqEzAAJsjAACulUQSPerP9J3dsfzNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Подтягивания широким хватом",
+    "file_id": "BAACAgIAAxkDAAIHBWkCFUd4iRvvLNO8QWGl8P4tRfWaAAJtjAACulUQSImtbcLi02SuNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Пуловер на блоке",
+    "file_id": "BAACAgIAAxkDAAIHBmkCFUriprShpoOVsPT6xrSL_nsLAAJujAACulUQSIzXYNxGmpedNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга верхнего блока",
+    "file_id": "BAACAgIAAxkDAAIHB2kCFUw7iEM7VLf54MVsPluW0jYXAAJvjAACulUQSHSu_hMaO8qaNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга гантелей лёжа на наклонной скамье",
+    "file_id": "BAACAgIAAxkDAAIHCGkCFU-3yoPMKKeOmh9F1uru13TRAAJwjAACulUQSFzqoBIrnQABEDYE",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга гантели в наклоне",
+    "file_id": "BAACAgIAAxkDAAIHCWkCFVIlP_c2zQvcAAEOwpmL77UdHwACcowAArpVEEiSLe9eEoxXgjYE",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга горизонтального блока",
+    "file_id": "BAACAgIAAxkDAAIHCmkCFVzU5Eg-ikm23LSUUqwTawdfAAJ0jAACulUQSPb6E1NtlAICNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга Т-грифа",
+    "file_id": "BAACAgIAAxkDAAIHC2kCFWG4GExAJ_2fuqBeuNwXjvSJAAJ2jAACulUQSEQtR84P1IcWNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Тяга штанги в наклоне",
+    "file_id": "BAACAgIAAxkDAAIHDGkCFWOriJ8IR4sQFvSGZloF19pSAAJ3jAACulUQSKY-wVX0f_-5NgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Шраги с гантелями",
+    "file_id": "BAACAgIAAxkDAAIHDWkCFWWQKmtaU6GA-_U3LgryRbitAAJ4jAACulUQSEb-NVXFNUdRNgQ",
+    "muscle_group": "Спина",
+    "type": "video"
+  },
+  {
+    "name": "Жим узким хватом",
+    "file_id": "BAACAgIAAxkDAAIHDmkCFWfXDWJd9hCDGeWcLXqSx8TOAAJ5jAACulUQSCy9vN9_KMedNgQ",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Разгибание рук в блоке из-за головы",
+    "file_id": "BAACAgIAAxkDAAIHD2kCFWm27tKZVHk6AAFsteEAAbtpQqAAAnqMAAK6VRBIq9nCE84YxvY2BA",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Разгибание рук на блоке",
+    "file_id": "BAACAgIAAxkDAAIHEGkCFWvj72O0oFLtYmykL-fFiPdLAAJ7jAACulUQSGfZoY4aXEtaNgQ",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Разгибание рук с гантелью из-за головы",
+    "file_id": "BAACAgIAAxkDAAIHEWkCFWzAoH1BmAp8aKRUke4isJDjAAJ8jAACulUQSNAoA_0lbrheNgQ",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Французский жим лёжа с гантелями",
+    "file_id": "BAACAgIAAxkDAAIHEmkCFXCtFjeQ0wcQteaLat5AC-cgAAJ9jAACulUQSMQ75N7byq5wNgQ",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Французский жим лёжа со штангой",
+    "file_id": "BAACAgIAAxkDAAIHE2kCFXffXYlixa97pIMAAem5zOaagQACfowAArpVEEhkBQlNFIorfzYE",
+    "muscle_group": "Трицепс",
+    "type": "video"
+  },
+  {
+    "name": "Французский жим сидя",
+    "file_id": "CgACAgIAAxkBAAIHHmkCFxVTI-xJ86k-iDg6iAcG708IAAKVjAACulUQSE7pgnbbB7e5NgQ",
+    "muscle_group": "Трицепс",
+    "type": "gif"
+  },
+  {
+    "name": "Повороты таза в планке",
+    "file_id": "CgACAgIAAxkBAAIHFGkCFsw-HbnB0UvtPARs4DXidsY2AAKQjAACulUQSPM113IwlOUeNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Подъемы из планки в планку",
+    "file_id": "CgACAgIAAxkBAAIHFmkCFtcjIauiIuFEsWB87Xfbbg92AAKRjAACulUQSJkuImY4VvWuNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Разведение ног полулежа",
+    "file_id": "CgACAgIAAxkBAAIHGGkCFuWeo6EmWoTCQ1fiTEI58BQiAAKSjAACulUQSIASZcVjdsuMNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Скручивания с вытягиванием рук",
+    "file_id": "CgACAgIAAxkBAAIHGmkCFuwPasm18XbtQJspFa4Yzt9KAAKTjAACulUQSFfe1thRN17rNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Скручивания с подъемом колена",
+    "file_id": "CgACAgIAAxkBAAIHHGkCFvepIKXLX4KU9ZfqLimiJ0BQAAKUjAACulUQSEQfsZo4zni2NgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Скручивания с подъемом корпуса",
+    "file_id": "CgACAgIAAxkBAAIHIGkCGKdonGsLvAtcb46MLSvC-b7jAAKujAACulUQSGo0gFfWs3XjNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  },
+  {
+    "name": "Скручивания с подъемом колена",
+    "file_id": "CgACAgIAAxkBAAIHHmkCFv7ZLgV3-FZvNqxGZ4yJlZ_LAAKWjAACulUQSPM113IwlOUeNgQ",
+    "muscle_group": "Пресс",
+    "type": "gif"
+  }
+]

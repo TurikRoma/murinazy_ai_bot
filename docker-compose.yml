@@ -1,0 +1,43 @@
+services:
+  bot:
+    build: .
+    command: python -m bot.main
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - my_network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    env_file:
+      - .env
+    # ВНИМАНИЕ: Эта настройка открывает вашу базу данных для доступа из интернета.
+    # Убедитесь, что вы используете очень надежный пароль и настроили файрвол для ограничения доступа.
+    # Для максимальной безопасности в продакшене рекомендуется использовать SSH-туннель или VPN.
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
